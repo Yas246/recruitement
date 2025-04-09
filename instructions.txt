@@ -1,0 +1,203 @@
+Prompt Global pour le Projet OMSHINA International Recruitment
+
+Contexte :
+Le but de ce projet est de créer une plateforme multiservice de recrutement international dédiée aux étudiants, travailleurs, artistes/talents et autres profils. Le front-end sera réalisé avec Next.js, TypeScript, TailwindCSS afin d’assurer une interface moderne, responsive et facilement maintenable. La partie backend, reposant sur Firebase (authentification, Firestore, Storage, Cloud Functions), viendra ultérieurement compléter le projet.
+
+1. Objectifs et Vision du Projet
+Mission : Faciliter la mobilité internationale en accompagnant divers profils (étudiants, travailleurs, artistes/talents) dans leurs démarches de recrutement et d’intégration à l’étranger.
+
+Public visé : Personnes souhaitant étudier, travailler ou se faire connaître à l’international.
+
+Valeurs clés : Expertise, personnalisation, accompagnement de A à Z.
+
+2. Structure Générale du Projet (Front-end)
+Dossiers principaux :
+
+/src/app
+
+Contiendra les pages principales et la logique de routage (choix d’utiliser l’App Router ou le système de pages traditionnelles de Next.js).
+
+Pages prévues : page d’accueil (landing), pages d’authentification (inscription/connexion), dashboard, pages spécifiques à chaque service, page admin (prévue pour plus tard).
+
+/src/components
+
+
+Exemples de composants : Navbar, Footer, Button, Card, Form, Input, Modal, Separator, etc.
+
+/src/styles
+
+Fichiers de configuration et de personnalisation de TailwindCSS (variables, couleurs, typographies, etc.) ainsi que des styles globaux.
+
+/src/hooks
+
+Contiendra les hooks personnalisés (ex. useAuth pour la gestion de l’authentification en prévision de Firebase, useResponsive pour gérer la responsivité).
+
+/src/lib
+
+Dossier pour les fonctions utilitaires, helpers et outils de validation de formulaires.
+
+/src/firebase (placeholder)
+
+Ce dossier sera dédié à l’intégration future de Firebase : initialisation du SDK, configuration de l’authentification, accès à Firestore et gestion du stockage.
+
+3. Contenu et Composants de la Page d’Accueil
+Contenu Textuel :
+
+Message d’accroche :
+
+Titre : « L'international au service de votre réussite »
+
+Sous-titre/introduction :
+"Bienvenue sur OMSHINA International Recruitment, votre portail de référence pour le recrutement international des étudiants, travailleurs, artistes et talents. Nous vous accompagnons à chaque étape pour concrétiser vos ambitions à l'étranger, en vous offrant des services personnalisés et une expertise complète. Rejoignez-nous et ouvrez les portes de votre avenir international !"
+
+Présentation Générale :
+
+Description de la plateforme et de sa mission.
+
+Explication que OMSHINA facilite la mobilité internationale en accompagnant dans les démarches administratives, la constitution de dossiers, et l’intégration à l’étranger.
+
+Mise en avant du réseau de partenaires internationaux et de la connaissance approfondie des réglementations.
+
+Présentation des Services :
+
+Recrutement des Étudiants :
+
+Pourquoi étudier à l’étranger (compétences internationales, découverte culturelle, éducation de qualité).
+
+Détail de l’accompagnement : orientation, préparation de dossiers, suivi des candidatures, aide à l’obtention du visa, assistance pour la relocalisation.
+
+Recrutement des Travailleurs :
+
+Avantages d’une expérience professionnelle internationale : diversification des compétences, expertise interculturelle, opportunités économiques.
+
+Services proposés : recherche d’opportunités, optimisation de la candidature (CV et lettre de motivation), coaching pour entretiens, aide au permis de travail, soutien à l'installation.
+
+Recrutement des Artistes et Talents :
+
+Importance des projets internationaux pour se faire connaître, collaborer avec d’autres créateurs et enrichir le paysage culturel.
+
+Offre : accompagnement stratégique, aide à la création de portfolio, support administratif pour visa artistes, assistance logistique pour les déplacements.
+
+Disposition et UI :
+
+En-tête (Header) :
+
+Texte d’accroche et call-to-action, centré et impactant.
+
+Call-to-Action :
+
+
+"S'inscrire"
+
+"Se connecter"
+
+Structuration par Sections :
+
+Utilisation de composants comme Card et Separator pour séparer visuellement les différentes parties du contenu.
+
+Disposition responsive pour s’adapter à tous les formats d’écran (mobile, tablette, desktop).
+
+4. Pages Additionnelles et Fonctions Front-end à Prévoir
+A. Page d’Authentification (Inscription/Connexion) :
+
+Page ou composant avec possibilité de basculer entre le formulaire d’inscription et celui de connexion.
+
+Champs pour saisie d’email, mot de passe et autres informations de base.
+
+Gestion de la validation et feedback d’erreur.
+
+Préparation d’un contexte Auth (AuthContext) à intégrer ultérieurement avec Firebase Auth.
+
+B. Tableau de Bord / Espace Utilisateur :
+
+Après authentification, rediriger vers un dashboard personnalisé en fonction du rôle ou du service choisi (étudiant, travailleur, artiste/talent ou autre).
+
+Affichage des informations personnelles (photo, nom, prénom, pays, email, contact).
+
+Menu de navigation (Navbar, Sidebar) pour accéder aux différentes sections (Mes Documents, Candidature, Messages, Portfolio, etc.).
+
+C. Sections de Services Spécifiques :
+
+Section Étudiants :
+
+Page “Mes Documents” pour le téléversement de fichiers (CV, diplômes, relevés de notes, passeport optionnel).
+
+Formulaire de candidature avec parcours scolaire, intégrant une liste déroulante dynamique pour choisir la formation adéquate.
+
+Espace pour télécharger des documents utiles (liste des questions, RIB, guide PDF).
+
+Module de chat ou messagerie basique (prototype) pour communiquer avec l’administration.
+
+Option pour passer un entretien vidéo (bouton redirigeant vers un module d’appel vidéo).
+
+Section Travailleurs :
+
+Page pour téléverser les documents pertinents (CV, attestations, passeport).
+
+Formulaire pour renseigner le métier actuel et sélectionner le métier désiré via une liste déroulante.
+
+Espace “Ma Demande” pour saisir librement une lettre de motivation ou des explications complémentaires.
+
+Section pour visualiser les messages ou retours de l’équipe, avec gestion des pièces jointes.
+
+Section Artistes/Talents :
+
+Fonctionnalités similaires à la section Travailleurs, avec en supplément :
+
+Une page “Mon Portfolio” pour créer et afficher une galerie d’images/vidéos.
+
+Intégration de liens vers des réseaux sociaux (Instagram, SoundCloud, etc.).
+
+Section Autre (pour profils non catégorisés) :
+
+Module “Qui je suis” pour afficher le nom, prénom et une présentation libre.
+
+Espace pour décrire précisément ce que l’utilisateur souhaite (objectif ou projet).
+
+Zone de messagerie pour recevoir ou envoyer des messages à l’équipe.
+
+D. Espace Administrateur :
+
+Conception d’un tableau de bord réservé aux admins.
+
+Affichage de tous les utilisateurs avec filtres par type de service.
+
+Options pour télécharger les candidatures, envoyer des messages ou programmer des entretiens.
+
+5. Préparation à l’Intégration de Firebase
+Dossier /src/firebase :
+
+Créer un espace dédié pour intégrer ultérieurement le SDK Firebase.
+
+Prévoir un fichier de configuration (ex. firebaseConfig.ts) pour initialiser les services Firebase.
+
+Contextes et Hooks :
+
+Construire des hooks (ex. useAuth, useFirestore) et un AuthContext pour isoler la logique d’authentification et de gestion de données qui sera remplacée par Firebase.
+
+Documenter ces hooks pour faciliter l’extension vers le backend Firebase par la suite.
+
+Séparation des Responsabilités :
+
+Garder le code front-end indépendant de la logique backend en isolant les appels de données dans des services ou hooks dédiés.
+
+6. Instructions et Bonnes Pratiques
+Modularité :
+
+Organiser le code par fonctionnalités et sections (ex. chaque service dans son dossier/component dédié).
+
+Commenter le code et documenter l’architecture pour faciliter la maintenance et l’évolution.
+
+Design Responsive :
+
+S’assurer que toutes les pages et composants sont responsives grâce à TailwindCSS.
+
+Versioning et Déploiement :
+
+Utiliser Git pour gérer les versions du projet.
+
+Prévoir un déploiement sur une plateforme telle que Vercel pour tester le rendu en temps réel.
+
+Extensibilité :
+
+Concevoir la structure afin de pouvoir ajouter ou modifier des sections et fonctionnalités (ex. nouveaux types d’utilisateurs ou services) sans remanier l’ensemble de l’architecture.

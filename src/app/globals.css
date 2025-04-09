@@ -1,26 +1,110 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
+@layer base {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #ffffff;
+    --foreground: #1e293b;
+  }
+
+  .dark {
+    --background: #121a2d;
+    --foreground: #f0f7ff;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    background: linear-gradient(
+      135deg,
+      var(--background) 0%,
+      rgba(240, 247, 255, 0.1) 100%
+    );
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-heading text-gray-900 dark:text-gray-50;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer components {
+  .auth-layout {
+    @apply min-h-screen flex flex-col bg-background;
+  }
+
+  .auth-layout.dark {
+    background: #1e2537; /* Couleur unie pour le mode sombre */
+    background-image: none; /* Pas de gradient en mode sombre */
+  }
+
+  .btn-primary {
+    @apply px-4 py-2 bg-primary-600/90 text-white rounded-lg 
+           hover:bg-primary-700/90 transition-colors backdrop-blur-sm
+           focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2
+           disabled:opacity-50 disabled:cursor-not-allowed
+           shadow-sm hover:shadow-md;
+  }
+
+  .btn-secondary {
+    @apply px-4 py-2 bg-white/70 text-primary-600 border-2 border-primary-600/20 rounded-lg
+           hover:bg-primary-50/90 transition-colors backdrop-blur-sm
+           focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2
+           disabled:opacity-50 disabled:cursor-not-allowed
+           shadow-sm hover:shadow-md
+           dark:bg-gray-800/70 dark:text-primary-300 dark:border-primary-400/20
+           dark:hover:bg-gray-700/90;
+  }
+
+  .card {
+    @apply bg-white/80 rounded-xl shadow-card p-6 backdrop-blur-sm
+           hover:shadow-card-hover transition-all
+           border border-white/20
+           dark:bg-gray-800/70 dark:border-gray-700/20;
+  }
+
+  .container-custom {
+    @apply container mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
+  .nav-link {
+    @apply text-gray-600 hover:text-primary-600 transition-colors
+           focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2
+           dark:text-gray-300 dark:hover:text-primary-400;
+  }
+
+  .glass-effect {
+    @apply bg-white/70 backdrop-blur-md border border-white/20
+           shadow-lg hover:shadow-xl transition-all
+           hover:bg-white/80
+           dark:bg-gray-800/60 dark:border-gray-700/20
+           dark:hover:bg-gray-800/70;
+  }
+
+  .glass-card {
+    @apply bg-white/60 backdrop-blur-md rounded-xl
+           border border-white/20 shadow-lg
+           hover:shadow-xl transition-all
+           hover:bg-white/70
+           dark:bg-gray-800/60 dark:border-gray-700/20
+           dark:hover:bg-gray-800/70;
+  }
+
+  .glass-header {
+    @apply bg-white/70 backdrop-blur-md
+           border-b border-white/20
+           shadow-sm
+           dark:bg-gray-900/80 dark:border-gray-800/50;
+  }
+
+  .glass-nav {
+    @apply bg-white/60 backdrop-blur-md
+           rounded-lg border border-white/20
+           shadow-lg
+           dark:bg-gray-800/60 dark:border-gray-700/20;
+  }
 }
