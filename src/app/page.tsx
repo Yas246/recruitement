@@ -49,7 +49,7 @@ export default function Home() {
               !
             </p>
             <Link
-              href="/contact"
+              href="/register"
               className="bg-primary-600 hover:bg-primary-700 text-white px-8 py-3 rounded-full transition-colors"
             >
               Commencer votre projet
@@ -222,7 +222,7 @@ export default function Home() {
               et découvrir comment nous pouvons vous accompagner.
             </p>
             <Link
-              href="/contact"
+              href="/register"
               className="inline-flex items-center gap-2 bg-primary-600 hover:bg-primary-700 text-white px-8 py-4 rounded-full text-lg font-medium transition-colors"
             >
               Commencer votre projet
