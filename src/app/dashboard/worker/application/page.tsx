@@ -15,18 +15,176 @@ export default function WorkerApplication() {
     { id: 5, name: "Décision finale", pending: true },
   ];
 
+  const renderPersonalForm = () => (
+    <div>
+      <h3 className="text-base sm:text-lg font-medium text-gray-900 dark:text-white mb-2 sm:mb-4">
+        Informations personnelles
+      </h3>
+      <p className="text-xs sm:text-sm text-gray-700 dark:text-gray-300 mb-3 sm:mb-4">
+        Veuillez compléter vos informations personnelles ci-dessous.
+      </p>
+
+      <form className="space-y-3 sm:space-y-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+          <div>
+            <label
+              htmlFor="firstName"
+              className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >
+              Prénom
+            </label>
+            <input
+              type="text"
+              id="firstName"
+              className="w-full px-3 py-1.5 sm:py-2 text-xs sm:text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+              defaultValue="John"
+            />
+          </div>
+          <div>
+            <label
+              htmlFor="lastName"
+              className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >
+              Nom
+            </label>
+            <input
+              type="text"
+              id="lastName"
+              className="w-full px-3 py-1.5 sm:py-2 text-xs sm:text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+              defaultValue="Doe"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label
+            htmlFor="email"
+            className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+          >
+            Email
+          </label>
+          <input
+            type="email"
+            id="email"
+            className="w-full px-3 py-1.5 sm:py-2 text-xs sm:text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+            defaultValue="john.doe@example.com"
+          />
+        </div>
+
+        <div className="flex justify-end pt-2">
+          <button
+            type="button"
+            className="px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors"
+            onClick={() => setActiveTab("experience")}
+          >
+            Suivant
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+
+  const renderExperienceForm = () => (
+    <div>
+      <h3 className="text-base sm:text-lg font-medium text-gray-900 dark:text-white mb-2 sm:mb-4">
+        Expérience professionnelle
+      </h3>
+      <p className="text-xs sm:text-sm text-gray-700 dark:text-gray-300 mb-3 sm:mb-4">
+        Veuillez renseigner vos expériences professionnelles et compétences.
+      </p>
+
+      <form className="space-y-3 sm:space-y-4">
+        <div>
+          <label
+            htmlFor="skills"
+            className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+          >
+            Compétences (séparées par des virgules)
+          </label>
+          <input
+            type="text"
+            id="skills"
+            className="w-full px-3 py-1.5 sm:py-2 text-xs sm:text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+            placeholder="Ex: JavaScript, React, Node.js, SQL"
+          />
+        </div>
+
+        <div className="flex justify-between pt-2">
+          <button
+            type="button"
+            className="px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm bg-gray-200 hover:bg-gray-300 text-gray-800 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200 rounded-lg transition-colors"
+            onClick={() => setActiveTab("personal")}
+          >
+            Précédent
+          </button>
+          <button
+            type="button"
+            className="px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors"
+            onClick={() => setActiveTab("motivation")}
+          >
+            Suivant
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+
+  const renderMotivationForm = () => (
+    <div>
+      <h3 className="text-base sm:text-lg font-medium text-gray-900 dark:text-white mb-2 sm:mb-4">
+        Objectifs professionnels
+      </h3>
+      <p className="text-xs sm:text-sm text-gray-700 dark:text-gray-300 mb-3 sm:mb-4">
+        Présentez vos motivations et objectifs professionnels.
+      </p>
+
+      <form className="space-y-3 sm:space-y-4">
+        <div>
+          <label
+            htmlFor="motivation"
+            className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+          >
+            Lettre de motivation
+          </label>
+          <textarea
+            id="motivation"
+            rows={5}
+            className="w-full px-3 py-1.5 sm:py-2 text-xs sm:text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+            placeholder="Présentez vos motivations et objectifs professionnels..."
+          ></textarea>
+        </div>
+
+        <div className="flex justify-between pt-2">
+          <button
+            type="button"
+            className="px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm bg-gray-200 hover:bg-gray-300 text-gray-800 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200 rounded-lg transition-colors"
+            onClick={() => setActiveTab("experience")}
+          >
+            Précédent
+          </button>
+          <button
+            type="submit"
+            className="px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors"
+          >
+            Soumettre ma candidature
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+
   return (
-    <div className="max-w-4xl mx-auto">
-      <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-8">
+    <div className="max-w-4xl mx-auto px-4 sm:px-6">
+      <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-4 sm:mb-6">
         Ma Candidature
       </h1>
 
-      <div className="glass-card p-6 mb-8">
-        <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+      <div className="glass-card p-4 sm:p-6 mb-4 sm:mb-6">
+        <h2 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white mb-2 sm:mb-4">
           Progression de votre dossier
         </h2>
         <ProgressBar steps={progressSteps} />
-        <p className="mt-4 text-gray-700 dark:text-gray-300">
+        <p className="mt-2 sm:mt-4 text-xs sm:text-sm text-gray-700 dark:text-gray-300">
           Votre progression est en bonne voie. Pour continuer, veuillez
           compléter les informations de votre candidature ci-dessous.
         </p>
@@ -34,9 +192,9 @@ export default function WorkerApplication() {
 
       <div className="glass-card overflow-hidden">
         {/* Onglets */}
-        <div className="flex border-b border-gray-200 dark:border-gray-700">
+        <div className="flex overflow-x-auto border-b border-gray-200 dark:border-gray-700">
           <button
-            className={`flex-1 py-4 px-6 text-center ${
+            className={`flex-1 min-w-[130px] py-2 px-4 text-center text-sm whitespace-nowrap ${
               activeTab === "personal"
                 ? "border-b-2 border-primary-600 text-primary-600 dark:border-primary-400 dark:text-primary-400 font-medium"
                 : "text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400"
@@ -46,7 +204,7 @@ export default function WorkerApplication() {
             Informations personnelles
           </button>
           <button
-            className={`flex-1 py-4 px-6 text-center ${
+            className={`flex-1 min-w-[130px] py-2 px-4 text-center text-sm whitespace-nowrap ${
               activeTab === "experience"
                 ? "border-b-2 border-primary-600 text-primary-600 dark:border-primary-400 dark:text-primary-400 font-medium"
                 : "text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400"
@@ -56,7 +214,7 @@ export default function WorkerApplication() {
             Expérience professionnelle
           </button>
           <button
-            className={`flex-1 py-4 px-6 text-center ${
+            className={`flex-1 min-w-[130px] py-2 px-4 text-center text-sm whitespace-nowrap ${
               activeTab === "motivation"
                 ? "border-b-2 border-primary-600 text-primary-600 dark:border-primary-400 dark:text-primary-400 font-medium"
                 : "text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400"
@@ -68,276 +226,10 @@ export default function WorkerApplication() {
         </div>
 
         {/* Contenu des onglets */}
-        <div className="p-6">
-          {activeTab === "personal" && (
-            <div>
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
-                Informations personnelles
-              </h3>
-              <p className="text-gray-700 dark:text-gray-300 mb-6">
-                Veuillez compléter vos informations personnelles ci-dessous.
-              </p>
-
-              <form className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label
-                      htmlFor="firstName"
-                      className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                    >
-                      Prénom
-                    </label>
-                    <input
-                      type="text"
-                      id="firstName"
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
-                      defaultValue="John"
-                    />
-                  </div>
-                  <div>
-                    <label
-                      htmlFor="lastName"
-                      className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                    >
-                      Nom
-                    </label>
-                    <input
-                      type="text"
-                      id="lastName"
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
-                      defaultValue="Doe"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="email"
-                    className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                  >
-                    Email
-                  </label>
-                  <input
-                    type="email"
-                    id="email"
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
-                    defaultValue="john.doe@example.com"
-                  />
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="phone"
-                    className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                  >
-                    Téléphone
-                  </label>
-                  <input
-                    type="tel"
-                    id="phone"
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
-                    placeholder="+33 6 12 34 56 78"
-                  />
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="location"
-                    className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                  >
-                    Localisation actuelle
-                  </label>
-                  <input
-                    type="text"
-                    id="location"
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
-                    placeholder="Paris, France"
-                  />
-                </div>
-
-                <div className="flex justify-end">
-                  <button
-                    type="button"
-                    className="btn-primary"
-                    onClick={() => setActiveTab("experience")}
-                  >
-                    Suivant
-                  </button>
-                </div>
-              </form>
-            </div>
-          )}
-
-          {activeTab === "experience" && (
-            <div>
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
-                Expérience professionnelle
-              </h3>
-              <p className="text-gray-700 dark:text-gray-300 mb-6">
-                Veuillez renseigner vos expériences professionnelles et
-                compétences.
-              </p>
-
-              <form className="space-y-4">
-                <div>
-                  <label
-                    htmlFor="currentPosition"
-                    className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                  >
-                    Poste actuel
-                  </label>
-                  <input
-                    type="text"
-                    id="currentPosition"
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
-                    placeholder="Ex: Développeur Full-Stack"
-                  />
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="company"
-                    className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                  >
-                    Entreprise actuelle
-                  </label>
-                  <input
-                    type="text"
-                    id="company"
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
-                    placeholder="Ex: Tech Solutions Inc."
-                  />
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="industry"
-                    className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                  >
-                    Secteur d&apos;activité
-                  </label>
-                  <select
-                    id="industry"
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
-                  >
-                    <option value="" disabled selected>
-                      Sélectionnez un secteur
-                    </option>
-                    <option value="technology">Technologie</option>
-                    <option value="finance">Finance</option>
-                    <option value="healthcare">Santé</option>
-                    <option value="education">Éducation</option>
-                    <option value="manufacturing">Industrie</option>
-                    <option value="retail">Commerce</option>
-                    <option value="other">Autre</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="skills"
-                    className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                  >
-                    Compétences clés (séparées par des virgules)
-                  </label>
-                  <textarea
-                    id="skills"
-                    rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
-                    placeholder="Ex: JavaScript, React, Node.js, SQL, TypeScript"
-                  ></textarea>
-                </div>
-
-                <div className="flex justify-between">
-                  <button
-                    type="button"
-                    className="btn-secondary"
-                    onClick={() => setActiveTab("personal")}
-                  >
-                    Précédent
-                  </button>
-                  <button
-                    type="button"
-                    className="btn-primary"
-                    onClick={() => setActiveTab("motivation")}
-                  >
-                    Suivant
-                  </button>
-                </div>
-              </form>
-            </div>
-          )}
-
-          {activeTab === "motivation" && (
-            <div>
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
-                Objectifs professionnels
-              </h3>
-              <p className="text-gray-700 dark:text-gray-300 mb-6">
-                Expliquez-nous vos objectifs professionnels et vos attentes.
-              </p>
-
-              <form className="space-y-4">
-                <div>
-                  <label
-                    htmlFor="desiredPosition"
-                    className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                  >
-                    Poste recherché
-                  </label>
-                  <input
-                    type="text"
-                    id="desiredPosition"
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
-                    placeholder="Ex: Chef de Projet IT"
-                  />
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="preferredLocations"
-                    className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                  >
-                    Lieux de travail préférés
-                  </label>
-                  <input
-                    type="text"
-                    id="preferredLocations"
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
-                    placeholder="Ex: Paris, Lyon, Bordeaux"
-                  />
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="motivation"
-                    className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                  >
-                    Projet professionnel
-                  </label>
-                  <textarea
-                    id="motivation"
-                    rows={10}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
-                    placeholder="Décrivez votre projet professionnel, vos motivations et vos attentes..."
-                  ></textarea>
-                </div>
-
-                <div className="flex justify-between">
-                  <button
-                    type="button"
-                    className="btn-secondary"
-                    onClick={() => setActiveTab("experience")}
-                  >
-                    Précédent
-                  </button>
-                  <button type="submit" className="btn-primary">
-                    Soumettre ma candidature
-                  </button>
-                </div>
-              </form>
-            </div>
-          )}
+        <div className="p-4 sm:p-6">
+          {activeTab === "personal" && renderPersonalForm()}
+          {activeTab === "experience" && renderExperienceForm()}
+          {activeTab === "motivation" && renderMotivationForm()}
         </div>
       </div>
     </div>

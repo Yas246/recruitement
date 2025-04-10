@@ -8,7 +8,7 @@ export default function ThemeToggle() {
   return (
     <button
       onClick={toggleTheme}
-      className="relative inline-flex items-center justify-center p-2 rounded-lg text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:text-white text-gray-800"
+      className="relative inline-flex items-center justify-center p-1.5 sm:p-2 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:text-white text-gray-800"
       aria-label={`Activer le mode ${theme === "dark" ? "clair" : "sombre"}`}
       title={`Activer le mode ${theme === "dark" ? "clair" : "sombre"}`}
     >
@@ -16,7 +16,7 @@ export default function ThemeToggle() {
         // Icône soleil (mode clair)
         <svg
           xmlns="http://www.w3.org/2000/svg"
-          className="h-5 w-5"
+          className="h-4 w-4 sm:h-5 sm:w-5"
           viewBox="0 0 20 20"
           fill="currentColor"
         >
@@ -30,7 +30,7 @@ export default function ThemeToggle() {
         // Icône lune (mode sombre)
         <svg
           xmlns="http://www.w3.org/2000/svg"
-          className="h-5 w-5"
+          className="h-4 w-4 sm:h-5 sm:w-5"
           viewBox="0 0 20 20"
           fill="currentColor"
         >

@@ -3,6 +3,7 @@
 import { AuthFormData } from "@/app/types/auth";
 import Link from "next/link";
 import { useState } from "react";
+import { useIsMobile } from "../utils/responsive";
 
 interface AuthFormProps {
   mode: "login" | "register";
@@ -10,6 +11,8 @@ interface AuthFormProps {
 }
 
 export default function AuthForm({ mode, onSubmit }: AuthFormProps) {
+  const isMobile = useIsMobile(640);
+
   const [formData, setFormData] = useState<AuthFormData>({
     email: "",
     password: "",
@@ -77,18 +80,22 @@ export default function AuthForm({ mode, onSubmit }: AuthFormProps) {
   };
 
   return (
-    <div className="glass-card p-8 w-full max-w-md mx-auto dark:bg-gray-800/90">
-      <h2 className="text-2xl font-bold text-center mb-6 text-gray-900 dark:text-white">
+    <div className="glass-card p-4 sm:p-6 md:p-8 w-full max-w-md mx-auto dark:bg-gray-800/90 transition-all">
+      <h2 className="text-xl sm:text-2xl font-bold text-center mb-4 sm:mb-6 text-gray-900 dark:text-white">
         {mode === "login" ? "Se connecter" : "Créer un compte"}
       </h2>
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
         {mode === "register" && (
           <>
-            <div className="grid grid-cols-2 gap-4">
+            <div
+              className={`${
+                isMobile ? "space-y-3" : "grid grid-cols-2 gap-3 sm:gap-4"
+              }`}
+            >
               <div>
                 <label
                   htmlFor="firstName"
-                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                  className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
                 >
                   Prénom
                 </label>
@@ -98,11 +105,11 @@ export default function AuthForm({ mode, onSubmit }: AuthFormProps) {
                   name="firstName"
                   value={formData.firstName}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-800 dark:text-white"
+                  className="w-full px-3 py-1.5 sm:py-2 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-800 dark:text-white"
                   placeholder="John"
                 />
                 {errors.firstName && (
-                  <p className="text-red-500 dark:text-red-400 text-sm mt-1">
+                  <p className="text-red-500 dark:text-red-400 text-xs sm:text-sm mt-1">
                     {errors.firstName}
                   </p>
                 )}
@@ -110,7 +117,7 @@ export default function AuthForm({ mode, onSubmit }: AuthFormProps) {
               <div>
                 <label
                   htmlFor="lastName"
-                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                  className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
                 >
                   Nom
                 </label>
@@ -120,11 +127,11 @@ export default function AuthForm({ mode, onSubmit }: AuthFormProps) {
                   name="lastName"
                   value={formData.lastName}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-800 dark:text-white"
+                  className="w-full px-3 py-1.5 sm:py-2 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-800 dark:text-white"
                   placeholder="Doe"
                 />
                 {errors.lastName && (
-                  <p className="text-red-500 dark:text-red-400 text-sm mt-1">
+                  <p className="text-red-500 dark:text-red-400 text-xs sm:text-sm mt-1">
                     {errors.lastName}
                   </p>
                 )}
@@ -134,7 +141,7 @@ export default function AuthForm({ mode, onSubmit }: AuthFormProps) {
             <div>
               <label
                 htmlFor="userType"
-                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
               >
                 Type de compte
               </label>
@@ -143,11 +150,12 @@ export default function AuthForm({ mode, onSubmit }: AuthFormProps) {
                 name="userType"
                 value={formData.userType}
                 onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-800 dark:text-white"
+                className="w-full px-3 py-1.5 sm:py-2 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-800 dark:text-white"
               >
                 <option value="student">Étudiant</option>
                 <option value="worker">Travailleur</option>
                 <option value="artist">Artiste</option>
+                <option value="other">Autre</option>
               </select>
             </div>
           </>
@@ -156,7 +164,7 @@ export default function AuthForm({ mode, onSubmit }: AuthFormProps) {
         <div>
           <label
             htmlFor="email"
-            className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
           >
             Email
           </label>
@@ -166,34 +174,48 @@ export default function AuthForm({ mode, onSubmit }: AuthFormProps) {
             name="email"
             value={formData.email}
             onChange={handleChange}
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-800 dark:text-white"
+            className="w-full px-3 py-1.5 sm:py-2 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-800 dark:text-white"
             placeholder="john.doe@example.com"
+            autoComplete="email"
           />
           {errors.email && (
-            <p className="text-red-500 dark:text-red-400 text-sm mt-1">
+            <p className="text-red-500 dark:text-red-400 text-xs sm:text-sm mt-1">
               {errors.email}
             </p>
           )}
         </div>
 
         <div>
-          <label
-            htmlFor="password"
-            className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-          >
-            Mot de passe
-          </label>
+          <div className="flex items-center justify-between mb-1">
+            <label
+              htmlFor="password"
+              className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300"
+            >
+              Mot de passe
+            </label>
+            {mode === "login" && (
+              <a
+                href="#"
+                className="text-xs text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
+              >
+                Mot de passe oublié ?
+              </a>
+            )}
+          </div>
           <input
             type="password"
             id="password"
             name="password"
             value={formData.password}
             onChange={handleChange}
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-800 dark:text-white"
+            className="w-full px-3 py-1.5 sm:py-2 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-800 dark:text-white"
             placeholder="••••••••"
+            autoComplete={
+              mode === "login" ? "current-password" : "new-password"
+            }
           />
           {errors.password && (
-            <p className="text-red-500 dark:text-red-400 text-sm mt-1">
+            <p className="text-red-500 dark:text-red-400 text-xs sm:text-sm mt-1">
               {errors.password}
             </p>
           )}
@@ -203,7 +225,7 @@ export default function AuthForm({ mode, onSubmit }: AuthFormProps) {
           <div>
             <label
               htmlFor="confirmPassword"
-              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
             >
               Confirmer le mot de passe
             </label>
@@ -213,11 +235,12 @@ export default function AuthForm({ mode, onSubmit }: AuthFormProps) {
               name="confirmPassword"
               value={formData.confirmPassword}
               onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-800 dark:text-white"
+              className="w-full px-3 py-1.5 sm:py-2 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-800 dark:text-white"
               placeholder="••••••••"
+              autoComplete="new-password"
             />
             {errors.confirmPassword && (
-              <p className="text-red-500 dark:text-red-400 text-sm mt-1">
+              <p className="text-red-500 dark:text-red-400 text-xs sm:text-sm mt-1">
                 {errors.confirmPassword}
               </p>
             )}
@@ -226,35 +249,23 @@ export default function AuthForm({ mode, onSubmit }: AuthFormProps) {
 
         <button
           type="submit"
-          className="w-full btn-primary py-3 dark:bg-primary-600"
+          className="w-full btn-primary py-2 sm:py-3 text-sm sm:text-base dark:bg-primary-600 mt-2 sm:mt-4"
         >
           {mode === "login" ? "Se connecter" : "S'inscrire"}
         </button>
       </form>
 
-      <p className="mt-4 text-center text-sm text-gray-600 dark:text-gray-400">
-        {mode === "login" ? (
-          <>
-            Pas encore de compte ?{" "}
-            <Link
-              href="/register"
-              className="text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
-            >
-              S&apos;inscrire
-            </Link>
-          </>
-        ) : (
-          <>
-            Déjà un compte ?{" "}
-            <Link
-              href="/login"
-              className="text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
-            >
-              Se connecter
-            </Link>
-          </>
-        )}
-      </p>
+      <div className="mt-3 sm:mt-6 flex flex-col sm:flex-row items-center justify-center space-y-2 sm:space-y-0 sm:space-x-4 text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+        <p className="text-center">
+          {mode === "login" ? "Pas encore de compte ?" : "Déjà un compte ?"}
+        </p>
+        <Link
+          href={mode === "login" ? "/register" : "/login"}
+          className="text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 font-medium"
+        >
+          {mode === "login" ? "S'inscrire" : "Se connecter"}
+        </Link>
+      </div>
     </div>
   );
 }

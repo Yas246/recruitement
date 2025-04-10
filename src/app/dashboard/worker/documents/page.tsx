@@ -179,54 +179,60 @@ export default function WorkerDocuments() {
 
   return (
     <div>
-      <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-8">
+      <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-4 sm:mb-6 md:mb-8">
         Mes Documents
       </h1>
 
-      <div className="glass-card p-6 mb-8">
-        <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+      <div className="glass-card p-4 sm:p-6 mb-4 sm:mb-6 md:mb-8">
+        <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white mb-2 sm:mb-4">
           Progression de votre dossier
         </h2>
         <ProgressBar steps={progressSteps} />
-        <p className="mt-4 text-gray-700 dark:text-gray-300">
+        <p className="mt-3 sm:mt-4 text-xs sm:text-sm md:text-base text-gray-700 dark:text-gray-300">
           Votre progression est en bonne voie. Veuillez compléter le
           téléversement des documents requis.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
         {/* Liste des documents */}
         <div className="lg:col-span-2">
-          <div className="glass-card p-6">
-            <div className="mb-6">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+          <div className="glass-card p-4 sm:p-6">
+            <div className="mb-3 sm:mb-4 md:mb-6">
+              <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white mb-1 sm:mb-2">
                 Documents requis
               </h2>
-              <p className="text-gray-700 dark:text-gray-300">
+              <p className="text-xs sm:text-sm text-gray-700 dark:text-gray-300">
                 Veuillez téléverser tous les documents requis pour compléter
-                votre dossier de candidature professionnelle.
+                votre dossier de candidature.
               </p>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-2 sm:space-y-3 md:space-y-4">
               {documents.map((doc) => (
                 <div
                   key={doc.id}
-                  className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors cursor-pointer"
+                  className={`border border-gray-200 dark:border-gray-700 rounded-lg p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors cursor-pointer ${
+                    selectedDocument?.id === doc.id
+                      ? "ring-2 ring-primary-500"
+                      : ""
+                  }`}
                   onClick={() => setSelectedDocument(doc)}
                 >
-                  <div className="flex items-center">
-                    {statusIcons[doc.status]}
-                    <div className="ml-4">
-                      <h3 className="font-medium text-gray-900 dark:text-white flex items-center">
+                  <div className="flex items-center mb-2 sm:mb-0">
+                    <div className="h-6 w-6 sm:h-8 sm:w-8 rounded-full flex items-center justify-center">
+                      {statusIcons[doc.status]}
+                    </div>
+                    <div className="ml-2 sm:ml-3">
+                      <h3 className="font-medium text-sm sm:text-base text-gray-900 dark:text-white flex items-center flex-wrap gap-1 sm:gap-2">
                         {doc.name}
                         {doc.required && (
-                          <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">
+                          <span className="inline-block text-xs px-1.5 py-0.5 rounded-full bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">
                             Requis
                           </span>
                         )}
                       </h3>
-                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                      <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5 sm:mt-1">
                         {doc.status === "not_uploaded" ? (
                           "Non téléversé"
                         ) : (
@@ -238,14 +244,14 @@ export default function WorkerDocuments() {
                     </div>
                   </div>
 
-                  <div>
+                  <div className="sm:ml-2">
                     {doc.status === "not_uploaded" ? (
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           handleUpload(doc.id);
                         }}
-                        className="px-3 py-1.5 bg-primary-600 text-white text-sm rounded-lg hover:bg-primary-700 transition-colors"
+                        className="w-full sm:w-auto px-2 sm:px-3 py-1 sm:py-1.5 bg-primary-600 text-white text-xs sm:text-sm rounded-lg hover:bg-primary-700 transition-colors"
                       >
                         Téléverser
                       </button>
@@ -253,7 +259,7 @@ export default function WorkerDocuments() {
                       <div className="flex space-x-2">
                         <button
                           onClick={(e) => e.stopPropagation()}
-                          className="px-3 py-1.5 bg-gray-200 text-gray-700 text-sm rounded-lg hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600 transition-colors"
+                          className="w-full sm:w-auto px-2 sm:px-3 py-1 sm:py-1.5 bg-gray-200 text-gray-700 text-xs sm:text-sm rounded-lg hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600 transition-colors"
                         >
                           Remplacer
                         </button>
@@ -267,20 +273,20 @@ export default function WorkerDocuments() {
         </div>
 
         {/* Aperçu et détails du document */}
-        <div className="glass-card p-6">
+        <div className="glass-card p-4 sm:p-6">
           {selectedDocument ? (
             <div>
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+              <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white mb-3 sm:mb-4">
                 Détails du document
               </h2>
 
-              <div className="mb-6">
-                <div className="aspect-video bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center mb-4">
+              <div className="mb-4 sm:mb-6">
+                <div className="aspect-video bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center mb-3 sm:mb-4">
                   {selectedDocument.status === "not_uploaded" ? (
-                    <div className="text-center p-6">
+                    <div className="text-center p-3 sm:p-4 md:p-6">
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
-                        className="h-12 w-12 mx-auto text-gray-400"
+                        className="h-6 w-6 sm:h-8 sm:w-8 md:h-12 md:w-12 mx-auto text-gray-400"
                         fill="none"
                         viewBox="0 0 24 24"
                         stroke="currentColor"
@@ -292,15 +298,15 @@ export default function WorkerDocuments() {
                           d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                         />
                       </svg>
-                      <p className="mt-2 text-gray-600 dark:text-gray-400">
+                      <p className="mt-2 text-xs sm:text-sm text-gray-600 dark:text-gray-400">
                         Aucun document téléversé
                       </p>
                     </div>
                   ) : (
-                    <div className="text-center p-6">
+                    <div className="text-center p-3 sm:p-4 md:p-6">
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
-                        className="h-12 w-12 mx-auto text-gray-400"
+                        className="h-6 w-6 sm:h-8 sm:w-8 md:h-12 md:w-12 mx-auto text-gray-400"
                         fill="none"
                         viewBox="0 0 24 24"
                         stroke="currentColor"
@@ -312,28 +318,28 @@ export default function WorkerDocuments() {
                           d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
                         />
                       </svg>
-                      <p className="mt-2 text-gray-600 dark:text-gray-400">
+                      <p className="mt-2 text-xs sm:text-sm text-gray-600 dark:text-gray-400">
                         Aperçu du document
                       </p>
                     </div>
                   )}
                 </div>
 
-                <div className="space-y-3">
+                <div className="space-y-2 sm:space-y-3">
                   <div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
                       Nom
                     </p>
-                    <p className="font-medium text-gray-900 dark:text-white">
+                    <p className="font-medium text-sm sm:text-base text-gray-900 dark:text-white">
                       {selectedDocument.name}
                     </p>
                   </div>
 
                   <div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
                       Statut
                     </p>
-                    <p className="font-medium">
+                    <p className="font-medium text-sm sm:text-base">
                       {selectedDocument.status === "pending" && (
                         <span className="text-amber-600 dark:text-amber-400">
                           En attente de validation
@@ -359,10 +365,10 @@ export default function WorkerDocuments() {
 
                   {selectedDocument.uploadDate && (
                     <div>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
                         Date de téléversement
                       </p>
-                      <p className="font-medium text-gray-900 dark:text-white">
+                      <p className="font-medium text-sm sm:text-base text-gray-900 dark:text-white">
                         {selectedDocument.uploadDate}
                       </p>
                     </div>
@@ -370,20 +376,20 @@ export default function WorkerDocuments() {
 
                   {selectedDocument.feedback && (
                     <div>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
                         Commentaire
                       </p>
-                      <p className="font-medium text-gray-900 dark:text-white">
+                      <p className="font-medium text-sm sm:text-base text-gray-900 dark:text-white">
                         {selectedDocument.feedback}
                       </p>
                     </div>
                   )}
 
                   <div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
                       Formats acceptés
                     </p>
-                    <p className="font-medium text-gray-900 dark:text-white">
+                    <p className="font-medium text-sm sm:text-base text-gray-900 dark:text-white">
                       {selectedDocument.type.toUpperCase()}
                     </p>
                   </div>
@@ -393,24 +399,26 @@ export default function WorkerDocuments() {
               {selectedDocument.status === "not_uploaded" ? (
                 <button
                   onClick={() => handleUpload(selectedDocument.id)}
-                  className="w-full btn-primary py-2"
+                  className="w-full btn-primary py-1.5 sm:py-2 text-xs sm:text-sm md:text-base"
                 >
                   Téléverser ce document
                 </button>
               ) : (
-                <div className="flex space-x-3">
-                  <button className="flex-1 btn-secondary py-2">
+                <div className="flex space-x-2 sm:space-x-3">
+                  <button className="flex-1 btn-secondary py-1.5 sm:py-2 text-xs sm:text-sm">
                     Télécharger
                   </button>
-                  <button className="flex-1 btn-primary py-2">Remplacer</button>
+                  <button className="flex-1 btn-primary py-1.5 sm:py-2 text-xs sm:text-sm">
+                    Remplacer
+                  </button>
                 </div>
               )}
             </div>
           ) : (
-            <div className="text-center py-10">
+            <div className="text-center py-6 sm:py-8 md:py-10">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                className="h-12 w-12 mx-auto text-gray-400"
+                className="h-6 w-6 sm:h-8 sm:w-8 md:h-12 md:w-12 mx-auto text-gray-400"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -422,10 +430,10 @@ export default function WorkerDocuments() {
                   d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"
                 />
               </svg>
-              <h3 className="mt-2 text-lg font-medium text-gray-900 dark:text-white">
+              <h3 className="mt-2 text-sm sm:text-base md:text-lg font-medium text-gray-900 dark:text-white">
                 Sélectionnez un document
               </h3>
-              <p className="mt-1 text-gray-600 dark:text-gray-400">
+              <p className="mt-1 text-xs sm:text-sm text-gray-600 dark:text-gray-400">
                 Cliquez sur un document pour voir ses détails
               </p>
             </div>

@@ -83,76 +83,76 @@ export default function AdminDashboard() {
   ];
 
   return (
-    <div className="max-w-7xl mx-auto">
-      <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-8">
+    <div className="w-full max-w-7xl mx-auto px-4 sm:px-6">
+      <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-6 sm:mb-8">
         Tableau de bord administrateur
       </h1>
 
       {/* Statistiques globales */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div className="glass-card p-6">
-          <h2 className="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">
+      <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
+        <div className="glass-card p-4 sm:p-6">
+          <h2 className="text-base sm:text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">
             Total des utilisateurs
           </h2>
-          <p className="text-4xl font-bold text-primary-600 dark:text-primary-400">
+          <p className="text-2xl sm:text-4xl font-bold text-primary-600 dark:text-primary-400">
             {totalUsers}
           </p>
-          <div className="flex items-center justify-between mt-4">
-            <span className="text-sm text-gray-600 dark:text-gray-400">
+          <div className="flex items-center justify-between mt-3 sm:mt-4">
+            <span className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
               Actifs: {totalActive}
             </span>
-            <span className="text-sm text-amber-600 dark:text-amber-400">
+            <span className="text-xs sm:text-sm text-amber-600 dark:text-amber-400">
               En attente: {totalPending}
             </span>
           </div>
         </div>
 
-        <div className="glass-card p-6">
-          <h2 className="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">
+        <div className="glass-card p-4 sm:p-6">
+          <h2 className="text-base sm:text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">
             Étudiants
           </h2>
-          <p className="text-4xl font-bold text-blue-600 dark:text-blue-400">
+          <p className="text-2xl sm:text-4xl font-bold text-blue-600 dark:text-blue-400">
             {stats.students.total}
           </p>
-          <div className="flex items-center justify-between mt-4">
-            <span className="text-sm text-gray-600 dark:text-gray-400">
+          <div className="flex items-center justify-between mt-3 sm:mt-4">
+            <span className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
               Actifs: {stats.students.active}
             </span>
-            <span className="text-sm text-amber-600 dark:text-amber-400">
+            <span className="text-xs sm:text-sm text-amber-600 dark:text-amber-400">
               En attente: {stats.students.pending}
             </span>
           </div>
         </div>
 
-        <div className="glass-card p-6">
-          <h2 className="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">
+        <div className="glass-card p-4 sm:p-6">
+          <h2 className="text-base sm:text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">
             Travailleurs
           </h2>
-          <p className="text-4xl font-bold text-green-600 dark:text-green-400">
+          <p className="text-2xl sm:text-4xl font-bold text-green-600 dark:text-green-400">
             {stats.workers.total}
           </p>
-          <div className="flex items-center justify-between mt-4">
-            <span className="text-sm text-gray-600 dark:text-gray-400">
+          <div className="flex items-center justify-between mt-3 sm:mt-4">
+            <span className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
               Actifs: {stats.workers.active}
             </span>
-            <span className="text-sm text-amber-600 dark:text-amber-400">
+            <span className="text-xs sm:text-sm text-amber-600 dark:text-amber-400">
               En attente: {stats.workers.pending}
             </span>
           </div>
         </div>
 
-        <div className="glass-card p-6">
-          <h2 className="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">
+        <div className="glass-card p-4 sm:p-6">
+          <h2 className="text-base sm:text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">
             Artistes
           </h2>
-          <p className="text-4xl font-bold text-purple-600 dark:text-purple-400">
+          <p className="text-2xl sm:text-4xl font-bold text-purple-600 dark:text-purple-400">
             {stats.artists.total}
           </p>
-          <div className="flex items-center justify-between mt-4">
-            <span className="text-sm text-gray-600 dark:text-gray-400">
+          <div className="flex items-center justify-between mt-3 sm:mt-4">
+            <span className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
               Actifs: {stats.artists.active}
             </span>
-            <span className="text-sm text-amber-600 dark:text-amber-400">
+            <span className="text-xs sm:text-sm text-amber-600 dark:text-amber-400">
               En attente: {stats.artists.pending}
             </span>
           </div>
@@ -160,18 +160,18 @@ export default function AdminDashboard() {
       </div>
 
       {/* Liens rapides */}
-      <div className="glass-card p-6 mb-8">
-        <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+      <div className="glass-card p-4 sm:p-6 mb-6 sm:mb-8">
+        <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white mb-3 sm:mb-4">
           Gestion des utilisateurs
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
           <Link
             href="/dashboard/admin/students"
-            className="btn-secondary flex items-center justify-center gap-2 py-3"
+            className="btn-secondary flex items-center justify-center gap-2 py-2 sm:py-3 text-xs sm:text-sm"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5"
+              className="h-4 w-4 sm:h-5 sm:w-5"
               viewBox="0 0 20 20"
               fill="currentColor"
             >
@@ -185,11 +185,11 @@ export default function AdminDashboard() {
           </Link>
           <Link
             href="/dashboard/admin/workers"
-            className="btn-secondary flex items-center justify-center gap-2 py-3"
+            className="btn-secondary flex items-center justify-center gap-2 py-2 sm:py-3 text-xs sm:text-sm"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5"
+              className="h-4 w-4 sm:h-5 sm:w-5"
               viewBox="0 0 20 20"
               fill="currentColor"
             >
@@ -204,11 +204,11 @@ export default function AdminDashboard() {
           </Link>
           <Link
             href="/dashboard/admin/artists"
-            className="btn-secondary flex items-center justify-center gap-2 py-3"
+            className="btn-secondary flex items-center justify-center gap-2 py-2 sm:py-3 text-xs sm:text-sm"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5"
+              className="h-4 w-4 sm:h-5 sm:w-5"
               viewBox="0 0 20 20"
               fill="currentColor"
             >
@@ -220,19 +220,19 @@ export default function AdminDashboard() {
       </div>
 
       {/* Activités récentes et nouvelles candidatures */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <div className="glass-card p-6">
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
+        <div className="glass-card p-4 sm:p-6">
+          <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white mb-3 sm:mb-4">
             Activités récentes
           </h2>
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             {recentActivities.map((activity) => (
               <div
                 key={activity.id}
-                className="flex items-start p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                className="flex items-start p-2 sm:p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
               >
                 <div
-                  className={`w-10 h-10 rounded-full flex items-center justify-center mr-3 ${
+                  className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center mr-3 ${
                     activity.userType === "student"
                       ? "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400"
                       : activity.userType === "worker"
@@ -243,7 +243,7 @@ export default function AdminDashboard() {
                   {activity.userType === "student" ? (
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
-                      className="h-5 w-5"
+                      className="h-4 w-4 sm:h-5 sm:w-5"
                       viewBox="0 0 20 20"
                       fill="currentColor"
                     >
@@ -252,7 +252,7 @@ export default function AdminDashboard() {
                   ) : activity.userType === "worker" ? (
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
-                      className="h-5 w-5"
+                      className="h-4 w-4 sm:h-5 sm:w-5"
                       viewBox="0 0 20 20"
                       fill="currentColor"
                     >
@@ -266,7 +266,7 @@ export default function AdminDashboard() {
                   ) : (
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
-                      className="h-5 w-5"
+                      className="h-4 w-4 sm:h-5 sm:w-5"
                       viewBox="0 0 20 20"
                       fill="currentColor"
                     >
@@ -274,11 +274,11 @@ export default function AdminDashboard() {
                     </svg>
                   )}
                 </div>
-                <div className="flex-1">
-                  <p className="font-medium text-gray-900 dark:text-white">
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-sm sm:text-base text-gray-900 dark:text-white truncate">
                     {activity.userName}
                   </p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                  <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 truncate">
                     {activity.action}
                   </p>
                   <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
@@ -290,25 +290,25 @@ export default function AdminDashboard() {
           </div>
           <Link
             href="/dashboard/admin/activities"
-            className="block text-center text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 mt-4 text-sm"
+            className="block text-center text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 mt-4 text-xs sm:text-sm"
           >
             Voir toutes les activités →
           </Link>
         </div>
 
-        <div className="glass-card p-6">
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+        <div className="glass-card p-4 sm:p-6">
+          <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white mb-3 sm:mb-4">
             Nouvelles candidatures
           </h2>
-          <div className="flex justify-between items-center mb-4">
-            <p className="text-gray-700 dark:text-gray-300">
+          <div className="flex flex-col xs:flex-row justify-between items-start xs:items-center mb-4 gap-2 xs:gap-0">
+            <p className="text-sm text-gray-700 dark:text-gray-300">
               Vous avez{" "}
               <span className="font-medium text-primary-600 dark:text-primary-400">
                 24
               </span>{" "}
-              nouvelles candidatures à examiner.
+              nouvelles candidatures.
             </p>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Link
                 href="/dashboard/admin/applications/students"
                 className="text-xs px-2 py-1 rounded bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
@@ -330,92 +330,130 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          <table className="min-w-full">
-            <thead>
-              <tr className="border-b border-gray-200 dark:border-gray-700">
-                <th className="text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider py-2">
-                  Nom
-                </th>
-                <th className="text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider py-2">
-                  Type
-                </th>
-                <th className="text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider py-2">
-                  Date
-                </th>
-                <th className="text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider py-2">
-                  Action
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                <td className="py-3 text-sm text-gray-900 dark:text-gray-100">
-                  Sarah Dubois
-                </td>
-                <td className="py-3 text-sm">
-                  <span className="px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
-                    Étudiant
-                  </span>
-                </td>
-                <td className="py-3 text-sm text-gray-500 dark:text-gray-400">
-                  Aujourd&apos;hui
-                </td>
-                <td className="py-3 text-sm text-right">
-                  <Link
-                    href="/dashboard/admin/application/student/123"
-                    className="text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
-                  >
-                    Consulter
-                  </Link>
-                </td>
-              </tr>
-              <tr className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                <td className="py-3 text-sm text-gray-900 dark:text-gray-100">
-                  Antoine Martin
-                </td>
-                <td className="py-3 text-sm">
-                  <span className="px-2 py-1 rounded-full text-xs bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
-                    Travailleur
-                  </span>
-                </td>
-                <td className="py-3 text-sm text-gray-500 dark:text-gray-400">
-                  Aujourd&apos;hui
-                </td>
-                <td className="py-3 text-sm text-right">
-                  <Link
-                    href="/dashboard/admin/application/worker/456"
-                    className="text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
-                  >
-                    Consulter
-                  </Link>
-                </td>
-              </tr>
-              <tr className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                <td className="py-3 text-sm text-gray-900 dark:text-gray-100">
-                  Marie Laurent
-                </td>
-                <td className="py-3 text-sm">
-                  <span className="px-2 py-1 rounded-full text-xs bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400">
-                    Artiste
-                  </span>
-                </td>
-                <td className="py-3 text-sm text-gray-500 dark:text-gray-400">
-                  Hier
-                </td>
-                <td className="py-3 text-sm text-right">
-                  <Link
-                    href="/dashboard/admin/application/artist/789"
-                    className="text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
-                  >
-                    Consulter
-                  </Link>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+          <div className="overflow-x-auto -mx-4 sm:mx-0">
+            <table className="min-w-full table-auto">
+              <thead className="sr-only sm:not-sr-only">
+                <tr className="border-b border-gray-200 dark:border-gray-700">
+                  <th className="text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider py-2 px-4 sm:px-2">
+                    Nom
+                  </th>
+                  <th className="text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider py-2 px-2">
+                    Type
+                  </th>
+                  <th className="text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider py-2 px-2">
+                    Date
+                  </th>
+                  <th className="text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider py-2 px-4 sm:px-2">
+                    Action
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr className="sm:hover:bg-gray-50 sm:dark:hover:bg-gray-800/50 transition-colors block sm:table-row border-b sm:border-b-0 border-gray-200 dark:border-gray-700 py-2 sm:py-0">
+                  <td className="sm:py-3 text-sm text-gray-900 dark:text-gray-100 flex justify-between sm:table-cell px-4 sm:px-2">
+                    <span className="sm:hidden font-medium text-gray-500 dark:text-gray-400">
+                      Nom:
+                    </span>
+                    Sarah Dubois
+                  </td>
+                  <td className="sm:py-3 text-sm flex justify-between sm:table-cell px-4 sm:px-2 pt-2 sm:pt-0">
+                    <span className="sm:hidden font-medium text-gray-500 dark:text-gray-400">
+                      Type:
+                    </span>
+                    <span className="px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+                      Étudiant
+                    </span>
+                  </td>
+                  <td className="sm:py-3 text-sm text-gray-500 dark:text-gray-400 flex justify-between sm:table-cell px-4 sm:px-2 pt-2 sm:pt-0">
+                    <span className="sm:hidden font-medium text-gray-500 dark:text-gray-400">
+                      Date:
+                    </span>
+                    Aujourd&apos;hui
+                  </td>
+                  <td className="sm:py-3 text-sm text-right flex justify-between sm:justify-end sm:table-cell px-4 sm:px-2 pt-2 sm:pt-0">
+                    <span className="sm:hidden font-medium text-gray-500 dark:text-gray-400">
+                      Action:
+                    </span>
+                    <Link
+                      href="/dashboard/admin/application/student/123"
+                      className="text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
+                    >
+                      Consulter
+                    </Link>
+                  </td>
+                </tr>
+                <tr className="sm:hover:bg-gray-50 sm:dark:hover:bg-gray-800/50 transition-colors block sm:table-row border-b sm:border-b-0 border-gray-200 dark:border-gray-700 py-2 sm:py-0">
+                  <td className="sm:py-3 text-sm text-gray-900 dark:text-gray-100 flex justify-between sm:table-cell px-4 sm:px-2">
+                    <span className="sm:hidden font-medium text-gray-500 dark:text-gray-400">
+                      Nom:
+                    </span>
+                    Antoine Martin
+                  </td>
+                  <td className="sm:py-3 text-sm flex justify-between sm:table-cell px-4 sm:px-2 pt-2 sm:pt-0">
+                    <span className="sm:hidden font-medium text-gray-500 dark:text-gray-400">
+                      Type:
+                    </span>
+                    <span className="px-2 py-1 rounded-full text-xs bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                      Travailleur
+                    </span>
+                  </td>
+                  <td className="sm:py-3 text-sm text-gray-500 dark:text-gray-400 flex justify-between sm:table-cell px-4 sm:px-2 pt-2 sm:pt-0">
+                    <span className="sm:hidden font-medium text-gray-500 dark:text-gray-400">
+                      Date:
+                    </span>
+                    Aujourd&apos;hui
+                  </td>
+                  <td className="sm:py-3 text-sm text-right flex justify-between sm:justify-end sm:table-cell px-4 sm:px-2 pt-2 sm:pt-0">
+                    <span className="sm:hidden font-medium text-gray-500 dark:text-gray-400">
+                      Action:
+                    </span>
+                    <Link
+                      href="/dashboard/admin/application/worker/456"
+                      className="text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
+                    >
+                      Consulter
+                    </Link>
+                  </td>
+                </tr>
+                <tr className="sm:hover:bg-gray-50 sm:dark:hover:bg-gray-800/50 transition-colors block sm:table-row py-2 sm:py-0">
+                  <td className="sm:py-3 text-sm text-gray-900 dark:text-gray-100 flex justify-between sm:table-cell px-4 sm:px-2">
+                    <span className="sm:hidden font-medium text-gray-500 dark:text-gray-400">
+                      Nom:
+                    </span>
+                    Marie Laurent
+                  </td>
+                  <td className="sm:py-3 text-sm flex justify-between sm:table-cell px-4 sm:px-2 pt-2 sm:pt-0">
+                    <span className="sm:hidden font-medium text-gray-500 dark:text-gray-400">
+                      Type:
+                    </span>
+                    <span className="px-2 py-1 rounded-full text-xs bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400">
+                      Artiste
+                    </span>
+                  </td>
+                  <td className="sm:py-3 text-sm text-gray-500 dark:text-gray-400 flex justify-between sm:table-cell px-4 sm:px-2 pt-2 sm:pt-0">
+                    <span className="sm:hidden font-medium text-gray-500 dark:text-gray-400">
+                      Date:
+                    </span>
+                    Hier
+                  </td>
+                  <td className="sm:py-3 text-sm text-right flex justify-between sm:justify-end sm:table-cell px-4 sm:px-2 pt-2 sm:pt-0">
+                    <span className="sm:hidden font-medium text-gray-500 dark:text-gray-400">
+                      Action:
+                    </span>
+                    <Link
+                      href="/dashboard/admin/application/artist/789"
+                      className="text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
+                    >
+                      Consulter
+                    </Link>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
           <Link
             href="/dashboard/admin/applications"
-            className="block text-center text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 mt-4 text-sm"
+            className="block text-center text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 mt-4 text-xs sm:text-sm"
           >
             Voir toutes les candidatures →
           </Link>
