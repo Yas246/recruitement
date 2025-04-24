@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import { useIsMobile } from "../utils/responsive";
 import Pagination from "./Pagination";
 
 export interface Column<T> {
@@ -10,7 +9,7 @@ export interface Column<T> {
   sortable?: boolean;
   width?: string;
   cellClassName?: string;
-  renderCell?: (value: any, row: T) => React.ReactNode;
+  renderCell?: (value: T[keyof T], row: T) => React.ReactNode;
 }
 
 interface DataTableProps<T> {
@@ -35,7 +34,7 @@ interface DataTableProps<T> {
   className?: string;
 }
 
-function DataTable<T extends Record<string, any>>({
+function DataTable<T extends Record<string, unknown>>({
   columns,
   data,
   keyField,
@@ -63,8 +62,6 @@ function DataTable<T extends Record<string, any>>({
     direction: "asc" | "desc";
   }>({ key: null, direction: "asc" });
 
-  const isMobile = useIsMobile();
-
   // Reset to page 1 when search term changes
   useEffect(() => {
     setCurrentPage(1);
@@ -82,15 +79,17 @@ function DataTable<T extends Record<string, any>>({
       }
 
       // Default search through all string fields
-      return Object.entries(item as Record<string, any>).some(([_, value]) => {
-        if (typeof value === "string") {
-          return value.toLowerCase().includes(searchTerm.toLowerCase());
+      return Object.entries(item as Record<string, unknown>).some(
+        ([, value]) => {
+          if (typeof value === "string") {
+            return value.toLowerCase().includes(searchTerm.toLowerCase());
+          }
+          if (typeof value === "number") {
+            return value.toString().includes(searchTerm);
+          }
+          return false;
         }
-        if (typeof value === "number") {
-          return value.toString().includes(searchTerm);
-        }
-        return false;
-      });
+      );
     });
   }, [data, searchTerm, searchable, searchField]);
 
@@ -225,7 +224,7 @@ function DataTable<T extends Record<string, any>>({
         : row[column.accessor];
 
     if (column.renderCell) {
-      return column.renderCell(cellValue, row);
+      return column.renderCell(cellValue as T[keyof T], row);
     }
 
     // Handle different types of cell values

@@ -1,20 +1,29 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import ThemeToggle from "../components/ThemeToggle";
+import UnreadMessagesCounter from "../components/UnreadMessagesCounter";
+import { useAuth } from "../contexts/AuthContext";
 import { useTheme } from "../contexts/ThemeContext";
-import { useIsMobile } from "../utils/responsive";
+import { useToast } from "../hooks/useToast";
 
 interface SidebarLinkProps {
   href: string;
   children: React.ReactNode;
   icon: React.ReactNode;
   onClick?: () => void;
+  showUnreadCounter?: boolean;
 }
 
-const SidebarLink = ({ href, children, icon, onClick }: SidebarLinkProps) => {
+const SidebarLink = ({
+  href,
+  children,
+  icon,
+  onClick,
+  showUnreadCounter,
+}: SidebarLinkProps) => {
   const pathname = usePathname();
   const isActive =
     pathname === href ||
@@ -32,7 +41,8 @@ const SidebarLink = ({ href, children, icon, onClick }: SidebarLinkProps) => {
       onClick={onClick}
     >
       <span className="text-lg">{icon}</span>
-      <span>{children}</span>
+      <span className="flex-1">{children}</span>
+      {showUnreadCounter && <UnreadMessagesCounter />}
     </Link>
   );
 };
@@ -44,9 +54,15 @@ export default function DashboardLayout({
 }) {
   const pathname = usePathname();
   const { theme } = useTheme();
-  const isMobile = useIsMobile();
-  const isSmallMobile = useIsMobile(480);
+  const router = useRouter();
+  const toast = useToast();
+  const { userData, signOut } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // Données utilisateur
+  const userDisplayName = userData
+    ? `${userData.firstName} ${userData.lastName}`
+    : "Utilisateur";
 
   // Fermer le menu mobile lorsque le chemin change
   useEffect(() => {
@@ -79,8 +95,22 @@ export default function DashboardLayout({
     setMobileMenuOpen(false);
   };
 
+  // Fonction de déconnexion
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      toast.success("Vous avez été déconnecté avec succès.");
+      router.push("/login");
+    } catch (error) {
+      console.error("Erreur lors de la déconnexion:", error);
+      toast.error("Une erreur est survenue lors de la déconnexion.");
+    }
+  };
+
   // Function to render links based on user type
   const renderNavLinks = (closeMenu?: () => void) => {
+    const handleClose = closeMenu ? () => closeMenu() : undefined;
+
     return (
       <nav className="space-y-1">
         <SidebarLink
@@ -95,7 +125,7 @@ export default function DashboardLayout({
               <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
             </svg>
           }
-          onClick={closeMenu}
+          onClick={handleClose}
         >
           Tableau de bord
         </SidebarLink>
@@ -114,7 +144,7 @@ export default function DashboardLayout({
                   <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
                 </svg>
               }
-              onClick={closeMenu}
+              onClick={handleClose}
             >
               Utilisateurs
             </SidebarLink>
@@ -136,7 +166,7 @@ export default function DashboardLayout({
                   />
                 </svg>
               }
-              onClick={closeMenu}
+              onClick={handleClose}
             >
               Candidatures
             </SidebarLink>
@@ -154,7 +184,8 @@ export default function DashboardLayout({
                   <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
                 </svg>
               }
-              onClick={closeMenu}
+              onClick={handleClose}
+              showUnreadCounter={true}
             >
               Messages
             </SidebarLink>
@@ -171,7 +202,7 @@ export default function DashboardLayout({
                   <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z" />
                 </svg>
               }
-              onClick={closeMenu}
+              onClick={handleClose}
             >
               Notifications
             </SidebarLink>
@@ -188,9 +219,30 @@ export default function DashboardLayout({
                   <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" />
                 </svg>
               }
-              onClick={closeMenu}
+              onClick={handleClose}
             >
               Statistiques
+            </SidebarLink>
+
+            <SidebarLink
+              href="/dashboard/admin/calendar"
+              icon={
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-4 w-4 sm:h-5 sm:w-5"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              }
+              onClick={handleClose}
+            >
+              Calendrier
             </SidebarLink>
 
             <SidebarLink
@@ -209,7 +261,7 @@ export default function DashboardLayout({
                   />
                 </svg>
               }
-              onClick={closeMenu}
+              onClick={handleClose}
             >
               Paramètres
             </SidebarLink>
@@ -226,7 +278,7 @@ export default function DashboardLayout({
                   <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z" />
                 </svg>
               }
-              onClick={closeMenu}
+              onClick={handleClose}
             >
               Entretiens vidéo
             </SidebarLink>
@@ -249,7 +301,7 @@ export default function DashboardLayout({
                   />
                 </svg>
               }
-              onClick={closeMenu}
+              onClick={handleClose}
             >
               Mes Documents
             </SidebarLink>
@@ -271,33 +323,10 @@ export default function DashboardLayout({
                   />
                 </svg>
               }
-              onClick={closeMenu}
+              onClick={handleClose}
             >
               Ma Candidature
             </SidebarLink>
-
-            {userType === "worker" && (
-              <SidebarLink
-                href="/dashboard/worker/interview"
-                icon={
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-4 w-4 sm:h-5 sm:w-5"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                }
-                onClick={closeMenu}
-              >
-                Entretiens
-              </SidebarLink>
-            )}
 
             <SidebarLink
               href={`/dashboard/${userType}/calendar`}
@@ -315,7 +344,7 @@ export default function DashboardLayout({
                   />
                 </svg>
               }
-              onClick={closeMenu}
+              onClick={handleClose}
             >
               Calendrier
             </SidebarLink>
@@ -333,7 +362,8 @@ export default function DashboardLayout({
                   <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
                 </svg>
               }
-              onClick={closeMenu}
+              onClick={handleClose}
+              showUnreadCounter={true}
             >
               Messages
             </SidebarLink>
@@ -350,7 +380,7 @@ export default function DashboardLayout({
                   <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z" />
                 </svg>
               }
-              onClick={closeMenu}
+              onClick={handleClose}
             >
               Mon entretien vidéo
             </SidebarLink>
@@ -372,7 +402,7 @@ export default function DashboardLayout({
                     />
                   </svg>
                 }
-                onClick={closeMenu}
+                onClick={handleClose}
               >
                 Mon Portfolio
               </SidebarLink>
@@ -394,7 +424,7 @@ export default function DashboardLayout({
                   />
                 </svg>
               }
-              onClick={closeMenu}
+              onClick={handleClose}
             >
               Paramètres
             </SidebarLink>
@@ -424,11 +454,11 @@ export default function DashboardLayout({
             </span>
             <div className="h-6 w-px bg-gray-300 dark:bg-gray-700 hidden sm:block"></div>
             <span className="text-gray-600 dark:text-gray-300 hidden sm:inline text-sm">
-              John Doe
+              {userDisplayName}
             </span>
             <ThemeToggle />
-            <Link
-              href="/"
+            <button
+              onClick={handleSignOut}
               className="text-gray-600 hover:text-red-600 dark:text-gray-300 dark:hover:text-red-400 p-1.5"
               aria-label="Se déconnecter"
             >
@@ -440,12 +470,11 @@ export default function DashboardLayout({
               >
                 <path
                   fillRule="evenodd"
-                  d="M3 3a1 1 0 00-1 1v12a1 1 0 001 1h12a1 1 0 001-1V7.414l-5-5H3zm9.414 1L15 6.586V16H4V4h8.414z"
+                  d="M3 3a1 1 0 00-1 1v12a1 1 0 001 1h12a1 1 0 001-1V7.414l-5-5H3zm7 6a1 1 0 10-2 0v3.586l-1.293-1.293a1 1 0 10-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 12.586V9z"
                   clipRule="evenodd"
                 />
-                <path d="M11 11.5a.5.5 0 01.5-.5h4a.5.5 0 010 1h-4a.5.5 0 01-.5-.5zm-6-4a.5.5 0 01.5-.5h10a.5.5 0 010 1h-10a.5.5 0 01-.5-.5z" />
               </svg>
-            </Link>
+            </button>
           </div>
         </div>
       </header>
@@ -472,7 +501,7 @@ export default function DashboardLayout({
                 </div>
               </div>
               <h2 className="font-bold text-center text-base sm:text-lg text-gray-900 dark:text-white">
-                John Doe
+                {userDisplayName}
               </h2>
               <p className="text-center text-sm text-gray-600 dark:text-gray-400">
                 {userTypeLabel}
@@ -540,7 +569,7 @@ export default function DashboardLayout({
               </div>
               <div>
                 <h4 className="font-medium text-sm sm:text-base text-gray-900 dark:text-white">
-                  John Doe
+                  {userDisplayName}
                 </h4>
                 <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
                   {userTypeLabel}

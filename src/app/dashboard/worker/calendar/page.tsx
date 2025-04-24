@@ -1,74 +1,69 @@
 "use client";
 
 import Calendar, { Event } from "@/app/components/Calendar";
-import { useState } from "react";
+import { useAuth } from "@/app/contexts/AuthContext";
+import { useToast } from "@/app/hooks/useToast";
+import { FirestoreDocument, firestoreService } from "@/firebase";
+import { useEffect, useState } from "react";
+
+interface CalendarEvent extends FirestoreDocument, Omit<Event, "id"> {
+  workerId: string;
+  createdBy: string;
+  status: "pending" | "confirmed" | "cancelled";
+}
 
 export default function WorkerCalendarPage() {
-  // Événements fictifs pour la démo adaptés au contexte professionnel
-  const [events] = useState<Event[]>([
-    {
-      id: 1,
-      title: "Entretien d'embauche",
-      description:
-        "Entretien avec le responsable RH et le chef de projet pour le poste de développeur senior",
-      date: "2023-06-15",
-      time: "10:30",
-      type: "meeting",
-      location: "Salle de conférence A / Visioconférence",
-      isImportant: true,
-    },
-    {
-      id: 2,
-      title: "Date limite documents administratifs",
-      description:
-        "Date limite pour soumettre tous les documents requis pour finaliser votre dossier",
-      date: "2023-06-20",
-      time: "18:00",
-      type: "deadline",
-      isImportant: true,
-    },
-    {
-      id: 3,
-      title: "Webinaire d'intégration",
-      description: "Présentation de l'entreprise et des processus internes",
-      date: "2023-06-22",
-      time: "14:00",
-      type: "info",
-      link: "https://zoom.us/j/123456789",
-    },
-    {
-      id: 4,
-      title: "Formation initiale",
-      description:
-        "Formation sur les outils et technologies utilisées dans l'entreprise",
-      date: "2023-06-25",
-      time: "09:00",
-      type: "workshop",
-      location: "Salle de formation",
-      link: "https://teams.microsoft.com/l/meetup-join/...",
-    },
-    {
-      id: 5,
-      title: "Réunion d'équipe",
-      description:
-        "Présentation des objectifs du trimestre et planification des projets",
-      date: "2023-06-28",
-      time: "11:00",
-      type: "meeting",
-      location: "Salle de réunion principale",
-    },
-    {
-      id: 6,
-      title: "Démarrage du contrat",
-      description:
-        "Premier jour officiel de travail - Session d'orientation avec le responsable RH",
-      date: "2023-07-01",
-      time: "09:00",
-      type: "meeting",
-      location: "Accueil de l'entreprise",
-      isImportant: true,
-    },
-  ]);
+  const { user } = useAuth();
+  const toast = useToast();
+  const [events, setEvents] = useState<Event[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  return <Calendar events={events} title="Calendrier Professionnel" />;
+  useEffect(() => {
+    const loadEvents = async () => {
+      if (!user?.uid) {
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        // Récupérer les événements du worker depuis Firestore
+        const workerEvents =
+          await firestoreService.getAllDocuments<CalendarEvent>(
+            `workers/${user.uid}/events`
+          );
+
+        // Convertir les événements Firestore en événements du calendrier
+        const formattedEvents: Event[] = workerEvents.map((event, index) => ({
+          id: index + 1, // Utiliser l'index comme ID numérique
+          title: event.title,
+          description: event.description,
+          date: event.date,
+          time: event.time,
+          type: event.type,
+          location: event.location,
+          link: event.link,
+          isImportant: event.isImportant,
+        }));
+
+        setEvents(formattedEvents);
+      } catch (error) {
+        console.error("Erreur lors du chargement des événements:", error);
+        toast.error("Impossible de charger vos événements");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadEvents();
+  }, [user?.uid, toast]);
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-600"></div>
+      </div>
+    );
+  }
+
+  return <Calendar events={events} title="Calendrier" />;
 }

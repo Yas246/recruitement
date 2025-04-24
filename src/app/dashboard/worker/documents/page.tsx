@@ -1,11 +1,12 @@
 "use client";
 
-import ProgressBar from "@/app/components/ProgressBar";
-import { useState } from "react";
+import WorkerProgressBar from "@/app/components/WorkerProgressBar";
+import { useAuth } from "@/app/contexts/AuthContext";
+import { useToast } from "@/app/hooks/useToast";
+import { FirestoreDocument, firestoreService } from "@/firebase";
+import { useEffect, useRef, useState } from "react";
 
-// Types pour les documents
-interface Document {
-  id: string;
+interface WorkerDocument extends FirestoreDocument {
   name: string;
   type: string;
   status: "pending" | "approved" | "rejected" | "not_uploaded";
@@ -13,100 +14,106 @@ interface Document {
   fileSize?: string;
   feedback?: string;
   required: boolean;
+  fileUrl?: string;
 }
 
 export default function WorkerDocuments() {
-  // Données factices pour simuler les étapes de progression
-  const progressSteps = [
-    { id: 1, name: "Informations personnelles", completed: true },
-    { id: 2, name: "Documents requis", completed: false, active: true },
-    { id: 3, name: "Candidature", completed: false },
-    { id: 4, name: "Entretien", pending: true },
-    { id: 5, name: "Décision finale", pending: true },
-  ];
+  const { user } = useAuth();
+  const toast = useToast();
+  const [isLoading, setIsLoading] = useState(true);
+  const [selectedDocument, setSelectedDocument] =
+    useState<WorkerDocument | null>(null);
+  const [documents, setDocuments] = useState<WorkerDocument[]>([]);
+  const [uploadingDoc, setUploadingDoc] = useState<string | null>(null);
 
-  // Documents requis pour la candidature travailleur
-  const [documents, setDocuments] = useState<Document[]>([
-    {
-      id: "cv",
-      name: "Curriculum Vitae",
-      type: "pdf",
-      status: "approved",
-      uploadDate: "10/04/2023",
-      fileSize: "540 KB",
-      feedback: "Document validé",
-      required: true,
-    },
-    {
-      id: "id",
-      name: "Pièce d'identité",
-      type: "pdf,jpg,png",
-      status: "pending",
-      uploadDate: "12/04/2023",
-      fileSize: "1.2 MB",
-      required: true,
-    },
-    {
-      id: "workCertificates",
-      name: "Certificats de travail",
-      type: "pdf",
-      status: "rejected",
-      uploadDate: "12/04/2023",
-      fileSize: "850 KB",
-      feedback:
-        "Veuillez fournir les certificats de vos 3 dernières expériences professionnelles.",
-      required: true,
-    },
-    {
-      id: "coverLetter",
-      name: "Lettre de motivation",
-      type: "pdf,docx",
-      status: "not_uploaded",
-      required: true,
-    },
-    {
-      id: "diploma",
-      name: "Diplômes",
-      type: "pdf,jpg,png",
-      status: "not_uploaded",
-      required: true,
-    },
-    {
-      id: "portfolio",
-      name: "Portfolio de projets",
-      type: "pdf,url",
-      status: "not_uploaded",
-      required: false,
-    },
-    {
-      id: "recommendations",
-      name: "Lettres de recommandation",
-      type: "pdf",
-      status: "not_uploaded",
-      required: false,
-    },
-  ]);
+  // Référence à l'input file caché
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // État pour le document sélectionné (pour afficher les détails)
-  const [selectedDocument, setSelectedDocument] = useState<Document | null>(
-    null
-  );
+  useEffect(() => {
+    const loadDocuments = async () => {
+      if (!user?.uid) {
+        setIsLoading(false);
+        return;
+      }
 
-  // Gestion de l'upload factice d'un document
-  const handleUpload = (docId: string) => {
-    // Simulation d'upload
-    setDocuments((prevDocs) =>
-      prevDocs.map((doc) =>
-        doc.id === docId
-          ? {
-              ...doc,
-              status: "pending",
-              uploadDate: new Date().toLocaleDateString(),
-              fileSize: "1.1 MB",
-            }
-          : doc
-      )
-    );
+      try {
+        const docs = await firestoreService.getAllDocuments<WorkerDocument>(
+          `workers/${user.uid}/documents`
+        );
+        if (!docs || docs.length === 0) {
+          // Documents par défaut si aucun n'existe
+          setDocuments([
+            {
+              id: "cv",
+              name: "Curriculum Vitae",
+              type: "pdf",
+              status: "not_uploaded",
+              required: true,
+            },
+            {
+              id: "id",
+              name: "Pièce d'identité",
+              type: "pdf,jpg,png",
+              status: "not_uploaded",
+              required: true,
+            },
+            {
+              id: "workCertificates",
+              name: "Certificats de travail",
+              type: "pdf",
+              status: "not_uploaded",
+              required: true,
+            },
+            {
+              id: "coverLetter",
+              name: "Lettre de motivation",
+              type: "pdf,docx",
+              status: "not_uploaded",
+              required: true,
+            },
+            {
+              id: "diploma",
+              name: "Diplômes",
+              type: "pdf,jpg,png",
+              status: "not_uploaded",
+              required: true,
+            },
+            {
+              id: "portfolio",
+              name: "Portfolio de projets",
+              type: "pdf,url",
+              status: "not_uploaded",
+              required: false,
+            },
+            {
+              id: "recommendations",
+              name: "Lettres de recommandation",
+              type: "pdf",
+              status: "not_uploaded",
+              required: false,
+            },
+          ]);
+        } else {
+          setDocuments(docs);
+        }
+      } catch (error) {
+        console.error("Erreur lors du chargement des documents:", error);
+        toast.error("Impossible de charger vos documents");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadDocuments();
+  }, [user?.uid, toast]);
+
+  const handleUpload = async (docId: string) => {
+    if (!docId) return;
+    // Déclencher le clic sur l'input file
+    if (fileInputRef.current) {
+      setUploadingDoc(docId);
+      fileInputRef.current.click();
+    }
   };
 
   // Icônes pour les différents statuts
@@ -177,20 +184,23 @@ export default function WorkerDocuments() {
     ),
   };
 
-  return (
-    <div>
-      <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-4 sm:mb-6 md:mb-8">
-        Mes Documents
-      </h1>
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-600"></div>
+      </div>
+    );
+  }
 
-      <div className="glass-card p-4 sm:p-6 mb-4 sm:mb-6 md:mb-8">
-        <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white mb-2 sm:mb-4">
+  return (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="glass-card p-6 mb-8">
+        <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
           Progression de votre dossier
         </h2>
-        <ProgressBar steps={progressSteps} />
-        <p className="mt-3 sm:mt-4 text-xs sm:text-sm md:text-base text-gray-700 dark:text-gray-300">
-          Votre progression est en bonne voie. Veuillez compléter le
-          téléversement des documents requis.
+        <WorkerProgressBar showPercentage size="medium" />
+        <p className="mt-4 text-sm text-gray-600 dark:text-gray-400">
+          Complétez votre dossier en téléchargeant les documents requis.
         </p>
       </div>
 
@@ -220,9 +230,7 @@ export default function WorkerDocuments() {
                   onClick={() => setSelectedDocument(doc)}
                 >
                   <div className="flex items-center mb-2 sm:mb-0">
-                    <div className="h-6 w-6 sm:h-8 sm:w-8 rounded-full flex items-center justify-center">
-                      {statusIcons[doc.status]}
-                    </div>
+                    {statusIcons[doc.status]}
                     <div className="ml-2 sm:ml-3">
                       <h3 className="font-medium text-sm sm:text-base text-gray-900 dark:text-white flex items-center flex-wrap gap-1 sm:gap-2">
                         {doc.name}
@@ -233,13 +241,11 @@ export default function WorkerDocuments() {
                         )}
                       </h3>
                       <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5 sm:mt-1">
-                        {doc.status === "not_uploaded" ? (
-                          "Non téléversé"
-                        ) : (
-                          <>
-                            Mis à jour le {doc.uploadDate} • {doc.fileSize}
-                          </>
-                        )}
+                        {doc.status === "not_uploaded"
+                          ? "Non téléversé"
+                          : `Mis à jour le ${doc.uploadDate || "N/A"} • ${
+                              doc.fileSize || "N/A"
+                            }`}
                       </p>
                     </div>
                   </div>
@@ -249,11 +255,19 @@ export default function WorkerDocuments() {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleUpload(doc.id);
+                          if (doc.id) handleUpload(doc.id);
                         }}
-                        className="w-full sm:w-auto px-2 sm:px-3 py-1 sm:py-1.5 bg-primary-600 text-white text-xs sm:text-sm rounded-lg hover:bg-primary-700 transition-colors"
+                        className="w-full sm:w-auto px-2 sm:px-3 py-1 sm:py-1.5 bg-primary-600 text-white text-xs sm:text-sm rounded-lg hover:bg-primary-700 transition-colors flex items-center"
+                        disabled={uploadingDoc === doc.id}
                       >
-                        Téléverser
+                        {uploadingDoc === doc.id ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white mr-2"></div>
+                            Téléversement...
+                          </>
+                        ) : (
+                          "Téléverser"
+                        )}
                       </button>
                     ) : (
                       <div className="flex space-x-2">
@@ -390,7 +404,7 @@ export default function WorkerDocuments() {
                       Formats acceptés
                     </p>
                     <p className="font-medium text-sm sm:text-base text-gray-900 dark:text-white">
-                      {selectedDocument.type.toUpperCase()}
+                      {selectedDocument.type?.toUpperCase() || "N/A"}
                     </p>
                   </div>
                 </div>
@@ -398,14 +412,34 @@ export default function WorkerDocuments() {
 
               {selectedDocument.status === "not_uploaded" ? (
                 <button
-                  onClick={() => handleUpload(selectedDocument.id)}
-                  className="w-full btn-primary py-1.5 sm:py-2 text-xs sm:text-sm md:text-base"
+                  onClick={() => {
+                    if (selectedDocument.id) handleUpload(selectedDocument.id);
+                  }}
+                  className="w-full btn-primary py-1.5 sm:py-2 text-xs sm:text-sm md:text-base flex items-center justify-center"
+                  disabled={uploadingDoc === selectedDocument.id}
                 >
-                  Téléverser ce document
+                  {uploadingDoc === selectedDocument.id ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white mr-2"></div>
+                      Téléversement...
+                    </>
+                  ) : (
+                    "Téléverser ce document"
+                  )}
                 </button>
               ) : (
                 <div className="flex space-x-2 sm:space-x-3">
-                  <button className="flex-1 btn-secondary py-1.5 sm:py-2 text-xs sm:text-sm">
+                  <button
+                    onClick={() => {
+                      const url = selectedDocument.fileUrl;
+                      if (typeof url === "string") {
+                        window.open(url, "_blank");
+                      } else {
+                        toast.error("Aucun fichier disponible");
+                      }
+                    }}
+                    className="flex-1 btn-secondary py-1.5 sm:py-2 text-xs sm:text-sm"
+                  >
                     Télécharger
                   </button>
                   <button className="flex-1 btn-primary py-1.5 sm:py-2 text-xs sm:text-sm">

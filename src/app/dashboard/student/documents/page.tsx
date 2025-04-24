@@ -1,10 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useAuth } from "@/app/contexts/AuthContext";
+import { useToast } from "@/app/hooks/useToast";
+import {
+  FirestoreDocument,
+  firestoreService,
+  storageService,
+} from "@/firebase";
+import { where } from "firebase/firestore";
+import { useEffect, useRef, useState } from "react";
 
 // Types pour les documents
-interface Document {
+interface DocumentMetadata extends FirestoreDocument {
   id: string;
+  studentId: string;
   name: string;
   type: string;
   status: "pending" | "approved" | "rejected" | "not_uploaded";
@@ -12,84 +21,249 @@ interface Document {
   fileSize?: string;
   feedback?: string;
   required: boolean;
+  fileUrl?: string;
+  fileName?: string;
 }
 
 export default function StudentDocuments() {
-  // Documents requis pour la candidature étudiant
-  const [documents, setDocuments] = useState<Document[]>([
-    {
-      id: "cv",
-      name: "Curriculum Vitae",
-      type: "pdf",
-      status: "approved",
-      uploadDate: "10/04/2023",
-      fileSize: "540 KB",
-      feedback: "Document validé",
-      required: true,
-    },
-    {
-      id: "diploma",
-      name: "Diplôme / Attestation de réussite",
-      type: "pdf,jpg,png",
-      status: "pending",
-      uploadDate: "12/04/2023",
-      fileSize: "1.2 MB",
-      required: true,
-    },
-    {
-      id: "transcript",
-      name: "Relevés de notes",
-      type: "pdf",
-      status: "rejected",
-      uploadDate: "12/04/2023",
-      fileSize: "850 KB",
-      feedback:
-        "Document incomplet. Veuillez fournir tous les relevés des 3 dernières années.",
-      required: true,
-    },
-    {
-      id: "motivation",
-      name: "Lettre de motivation",
-      type: "pdf,docx",
-      status: "not_uploaded",
-      required: true,
-    },
-    {
-      id: "passport",
-      name: "Passeport / Pièce d&apos;identité",
-      type: "pdf,jpg,png",
-      status: "not_uploaded",
-      required: true,
-    },
-    {
-      id: "recommendation",
-      name: "Lettres de recommandation",
-      type: "pdf",
-      status: "not_uploaded",
-      required: false,
-    },
-  ]);
+  const { userData } = useAuth();
+  const toast = useToast();
+  const [documents, setDocuments] = useState<DocumentMetadata[]>([]);
+  const [selectedDocument, setSelectedDocument] =
+    useState<DocumentMetadata | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState<string | null>(null); // ID du document en cours d'upload
 
-  // État pour le document sélectionné (pour afficher les détails)
-  const [selectedDocument, setSelectedDocument] = useState<Document | null>(
-    null
-  );
+  // Références pour les input file
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const fileInputDetailRef = useRef<HTMLInputElement>(null);
 
-  // Gestion de l'upload factice d'un document
-  const handleUpload = (docId: string) => {
-    // Simulation d'upload
-    setDocuments((prevDocs) =>
-      prevDocs.map((doc) =>
-        doc.id === docId
-          ? {
-              ...doc,
-              status: "pending",
-              uploadDate: new Date().toLocaleDateString(),
-              fileSize: "1.1 MB",
-            }
-          : doc
-      )
-    );
+  // Charger les documents de l'étudiant
+  useEffect(() => {
+    const fetchDocuments = async () => {
+      if (!userData?.id) return;
+
+      try {
+        // Récupérer les documents depuis Firestore
+        const docsResult =
+          await firestoreService.queryDocuments<DocumentMetadata>(
+            "studentDocuments",
+            [where("studentId", "==", userData.id)]
+          );
+
+        if (docsResult?.length > 0) {
+          setDocuments(docsResult);
+        } else {
+          // Liste des documents requis par défaut
+          const defaultDocuments: Omit<DocumentMetadata, "studentId">[] = [
+            {
+              id: "cv",
+              name: "Curriculum Vitae",
+              type: "pdf",
+              status: "not_uploaded",
+              required: true,
+            },
+            {
+              id: "diploma",
+              name: "Diplôme / Attestation de réussite",
+              type: "pdf,jpg,png",
+              status: "not_uploaded",
+              required: true,
+            },
+            {
+              id: "transcript",
+              name: "Relevés de notes",
+              type: "pdf",
+              status: "not_uploaded",
+              required: true,
+            },
+            {
+              id: "motivation",
+              name: "Lettre de motivation",
+              type: "pdf,docx",
+              status: "not_uploaded",
+              required: true,
+            },
+            {
+              id: "passport",
+              name: "Passeport / Pièce d'identité",
+              type: "pdf,jpg,png",
+              status: "not_uploaded",
+              required: true,
+            },
+            {
+              id: "recommendation",
+              name: "Lettres de recommandation",
+              type: "pdf",
+              status: "not_uploaded",
+              required: false,
+            },
+          ];
+
+          // Créer les documents par défaut s'ils n'existent pas
+          const newDocs = await Promise.all(
+            defaultDocuments.map(async (doc) => {
+              const docWithStudentId: DocumentMetadata = {
+                id: doc.id as string,
+                name: doc.name as string,
+                type: doc.type as string,
+                status: doc.status as
+                  | "pending"
+                  | "approved"
+                  | "rejected"
+                  | "not_uploaded",
+                required: doc.required as boolean,
+                studentId: userData.id,
+              };
+              await firestoreService.createDocument(
+                "studentDocuments",
+                `${userData.id}_${doc.id}`,
+                docWithStudentId
+              );
+              return docWithStudentId;
+            })
+          );
+          setDocuments(newDocs);
+        }
+      } catch (error) {
+        console.error("Erreur lors du chargement des documents:", error);
+        toast.error("Erreur lors du chargement des documents");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDocuments();
+  }, [userData?.id, toast]);
+
+  // Fonction pour téléverser un document
+  const handleUploadFile = async (docId: string, file: File) => {
+    if (!userData?.id || !file) return;
+
+    try {
+      setUploading(docId);
+      const selectedDoc = documents.find((doc) => doc.id === docId);
+
+      if (!selectedDoc) {
+        toast.error("Document non trouvé");
+        return;
+      }
+
+      // Vérifier le type de fichier
+      const allowedTypes = selectedDoc.type.split(",");
+      const fileExtension = file.name.split(".").pop()?.toLowerCase();
+
+      if (!fileExtension || !allowedTypes.includes(fileExtension)) {
+        toast.error(
+          `Type de fichier non supporté. Types acceptés: ${selectedDoc.type.toUpperCase()}`
+        );
+        return;
+      }
+
+      // Calculer la taille du fichier
+      const fileSizeKB = Math.round(file.size / 1024);
+      const fileSizeFormatted =
+        fileSizeKB >= 1024
+          ? `${(fileSizeKB / 1024).toFixed(1)} MB`
+          : `${fileSizeKB} KB`;
+
+      // Générer le chemin de stockage
+      const filePath = storageService.generateFilePath(
+        userData.id,
+        file.name,
+        "documents"
+      );
+
+      // Téléverser le fichier vers Firebase Storage
+      const fileUrl = await storageService.uploadFile(filePath, file);
+
+      // Mettre à jour les métadonnées du document dans Firestore
+      const updatedDoc: Partial<DocumentMetadata> = {
+        status: "pending",
+        uploadDate: new Date().toLocaleDateString(),
+        fileSize: fileSizeFormatted,
+        fileUrl: fileUrl,
+        fileName: file.name,
+      };
+
+      await firestoreService.updateDocument(
+        "studentDocuments",
+        `${userData.id}_${docId}`,
+        updatedDoc
+      );
+
+      // Mettre à jour l'état local
+      setDocuments((prevDocs) =>
+        prevDocs.map((doc) =>
+          doc.id === docId ? { ...doc, ...updatedDoc } : doc
+        )
+      );
+
+      // Mettre à jour le document sélectionné
+      if (selectedDocument?.id === docId) {
+        setSelectedDocument((prev) =>
+          prev ? { ...prev, ...updatedDoc } : null
+        );
+      }
+
+      toast.success("Document téléversé avec succès");
+    } catch (error) {
+      console.error("Erreur lors du téléversement:", error);
+      toast.error("Erreur lors du téléversement du document");
+    } finally {
+      setUploading(null);
+    }
+  };
+
+  // Gérer le changement de fichier
+  const handleFileChange = (
+    event: React.ChangeEvent<HTMLInputElement>,
+    docId: string
+  ) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      handleUploadFile(docId, file);
+    }
+  };
+
+  // Initier l'upload pour un document spécifique
+  const initiateUpload = (
+    docId: string,
+    ref:
+      | React.RefObject<HTMLInputElement>
+      | React.MutableRefObject<HTMLInputElement | null>
+  ) => {
+    if (ref && ref.current) {
+      ref.current.click();
+    }
+  };
+
+  // Télécharger un document
+  const handleDownload = async (docId: string) => {
+    try {
+      const doc = documents.find((d) => d.id === docId);
+
+      if (doc?.fileUrl) {
+        // Option 1: Redirection vers l'URL directe
+        window.open(doc.fileUrl, "_blank");
+
+        // Option 2: Téléchargement en utilisant fetch puis création d'un lien temporaire
+        // const response = await fetch(doc.fileUrl);
+        // const blob = await response.blob();
+        // const url = window.URL.createObjectURL(blob);
+        // const a = document.createElement('a');
+        // a.href = url;
+        // a.download = doc.fileName || `${doc.name}.pdf`;
+        // document.body.appendChild(a);
+        // a.click();
+        // document.body.removeChild(a);
+      } else {
+        toast.error("Aucun fichier disponible pour ce document");
+      }
+    } catch (error) {
+      console.error("Erreur lors du téléchargement:", error);
+      toast.error("Erreur lors du téléchargement du document");
+    }
   };
 
   // Icônes pour les différents statuts
@@ -160,6 +334,42 @@ export default function StudentDocuments() {
     ),
   };
 
+  // Input file caché pour le téléversement
+  const fileInput = (
+    <input
+      type="file"
+      className="hidden"
+      ref={fileInputRef}
+      onChange={(e) => {
+        if (uploading) {
+          handleFileChange(e, uploading);
+        }
+      }}
+    />
+  );
+
+  // Input file caché pour la vue détaillée
+  const fileInputDetail = (
+    <input
+      type="file"
+      className="hidden"
+      ref={fileInputDetailRef}
+      onChange={(e) => {
+        if (selectedDocument) {
+          handleFileChange(e, selectedDocument.id);
+        }
+      }}
+    />
+  );
+
+  if (loading) {
+    return (
+      <div className="w-full flex justify-center items-center h-[calc(100vh-200px)]">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-600"></div>
+      </div>
+    );
+  }
+
   return (
     <div>
       <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-4 sm:mb-8">
@@ -215,19 +425,54 @@ export default function StudentDocuments() {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleUpload(doc.id);
+                          setUploading(doc.id);
+                          initiateUpload(doc.id, fileInputRef);
                         }}
-                        className="w-full sm:w-auto px-3 py-1.5 bg-primary-600 text-white text-xs sm:text-sm rounded-lg hover:bg-primary-700 transition-colors"
+                        className="w-full sm:w-auto px-3 py-1.5 bg-primary-600 text-white text-xs sm:text-sm rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled={!!uploading}
                       >
-                        Téléverser
+                        {uploading === doc.id ? (
+                          <span className="flex items-center">
+                            <svg
+                              className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                              xmlns="http://www.w3.org/2000/svg"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                            >
+                              <circle
+                                className="opacity-25"
+                                cx="12"
+                                cy="12"
+                                r="10"
+                                stroke="currentColor"
+                                strokeWidth="4"
+                              ></circle>
+                              <path
+                                className="opacity-75"
+                                fill="currentColor"
+                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                              ></path>
+                            </svg>
+                            Téléversement...
+                          </span>
+                        ) : (
+                          "Téléverser"
+                        )}
                       </button>
                     ) : (
                       <div className="flex space-x-2">
                         <button
-                          onClick={(e) => e.stopPropagation()}
-                          className="w-full sm:w-auto px-3 py-1.5 bg-gray-200 text-gray-700 text-xs sm:text-sm rounded-lg hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600 transition-colors"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setUploading(doc.id);
+                            initiateUpload(doc.id, fileInputRef);
+                          }}
+                          className="w-full sm:w-auto px-3 py-1.5 bg-gray-200 text-gray-700 text-xs sm:text-sm rounded-lg hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          disabled={!!uploading}
                         >
-                          Remplacer
+                          {uploading === doc.id
+                            ? "Téléversement..."
+                            : "Remplacer"}
                         </button>
                       </div>
                     )}
@@ -285,7 +530,7 @@ export default function StudentDocuments() {
                         />
                       </svg>
                       <p className="mt-2 text-xs sm:text-sm text-gray-600 dark:text-gray-400">
-                        Aperçu du document
+                        {selectedDocument.fileName || "Aperçu du document"}
                       </p>
                     </div>
                   )}
@@ -364,18 +609,60 @@ export default function StudentDocuments() {
 
               {selectedDocument.status === "not_uploaded" ? (
                 <button
-                  onClick={() => handleUpload(selectedDocument.id)}
-                  className="w-full btn-primary py-2 text-sm sm:text-base"
+                  onClick={() => {
+                    setUploading(selectedDocument.id);
+                    initiateUpload(selectedDocument.id, fileInputDetailRef);
+                  }}
+                  className="w-full btn-primary py-2 text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={!!uploading}
                 >
-                  Téléverser ce document
+                  {uploading === selectedDocument.id ? (
+                    <span className="flex items-center justify-center">
+                      <svg
+                        className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        ></circle>
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        ></path>
+                      </svg>
+                      Téléversement en cours...
+                    </span>
+                  ) : (
+                    "Téléverser ce document"
+                  )}
                 </button>
               ) : (
                 <div className="flex space-x-2 sm:space-x-3">
-                  <button className="flex-1 btn-secondary py-2 text-xs sm:text-sm">
+                  <button
+                    className="flex-1 btn-secondary py-2 text-xs sm:text-sm"
+                    onClick={() => handleDownload(selectedDocument.id)}
+                  >
                     Télécharger
                   </button>
-                  <button className="flex-1 btn-primary py-2 text-xs sm:text-sm">
-                    Remplacer
+                  <button
+                    className="flex-1 btn-primary py-2 text-xs sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                    onClick={() => {
+                      setUploading(selectedDocument.id);
+                      initiateUpload(selectedDocument.id, fileInputDetailRef);
+                    }}
+                    disabled={!!uploading}
+                  >
+                    {uploading === selectedDocument.id
+                      ? "Téléversement..."
+                      : "Remplacer"}
                   </button>
                 </div>
               )}
@@ -406,6 +693,10 @@ export default function StudentDocuments() {
           )}
         </div>
       </div>
+
+      {/* Inputs file cachés pour téléversement */}
+      {fileInput}
+      {fileInputDetail}
     </div>
   );
 }

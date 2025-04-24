@@ -1,14 +1,18 @@
 "use client";
 
+import { useAuth } from "@/app/contexts/AuthContext";
+import { useToast } from "@/app/hooks/useToast";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { useIsMobile } from "../utils/responsive";
 import ThemeToggle from "./ThemeToggle";
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
-  const isMobile = useIsMobile();
+  const { user, userData, signOut, userLoading } = useAuth();
+  const router = useRouter();
+  const toast = useToast();
 
   // Effet pour détecter le défilement
   useEffect(() => {
@@ -20,6 +24,24 @@ export default function Header() {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  // Fonction pour gérer la déconnexion
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      setIsMenuOpen(false);
+      toast.success("Vous avez été déconnecté avec succès.");
+      router.push("/login");
+    } catch (error) {
+      console.error("Erreur lors de la déconnexion:", error);
+      toast.error("Une erreur est survenue lors de la déconnexion.");
+    }
+  };
+
+  // Déterminer le type d'utilisateur pour le lien du dashboard
+  const dashboardLink = userData?.role
+    ? `/dashboard/${userData.role}`
+    : "/dashboard/other";
 
   return (
     <header
@@ -46,12 +68,6 @@ export default function Header() {
           <div className="hidden md:flex items-center space-x-4 lg:space-x-8">
             {/* Navigation Links */}
             <div className="flex items-center space-x-3 lg:space-x-6">
-              <Link href="/services" className="nav-link text-sm lg:text-base">
-                Services
-              </Link>
-              <Link href="/about" className="nav-link text-sm lg:text-base">
-                À propos
-              </Link>
               <Link href="/contact" className="nav-link text-sm lg:text-base">
                 Contact
               </Link>
@@ -59,20 +75,46 @@ export default function Header() {
 
             {/* Auth Buttons and Theme Toggle */}
             <div className="flex items-center space-x-2 lg:space-x-4">
-              <Link
-                href="/login"
-                className="btn-secondary text-sm lg:text-base px-3 py-1.5 lg:px-4 lg:py-2"
-                aria-label="Se connecter à votre compte"
-              >
-                Se Connecter
-              </Link>
-              <Link
-                href="/register"
-                className="btn-primary text-sm lg:text-base px-3 py-1.5 lg:px-4 lg:py-2"
-                aria-label="Créer un nouveau compte"
-              >
-                S&apos;inscrire
-              </Link>
+              {userLoading ? (
+                // État de chargement
+                <div className="w-24 h-8 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+              ) : user ? (
+                // Utilisateur connecté
+                <>
+                  <Link
+                    href={dashboardLink}
+                    className="btn-secondary text-sm lg:text-base px-3 py-1.5 lg:px-4 lg:py-2"
+                    aria-label="Accéder à votre tableau de bord"
+                  >
+                    Tableau de bord
+                  </Link>
+                  <button
+                    onClick={handleSignOut}
+                    className="btn-primary text-sm lg:text-base px-3 py-1.5 lg:px-4 lg:py-2"
+                    aria-label="Se déconnecter"
+                  >
+                    Déconnexion
+                  </button>
+                </>
+              ) : (
+                // Utilisateur non connecté
+                <>
+                  <Link
+                    href="/login"
+                    className="btn-secondary text-sm lg:text-base px-3 py-1.5 lg:px-4 lg:py-2"
+                    aria-label="Se connecter à votre compte"
+                  >
+                    Se Connecter
+                  </Link>
+                  <Link
+                    href="/register"
+                    className="btn-primary text-sm lg:text-base px-3 py-1.5 lg:px-4 lg:py-2"
+                    aria-label="Créer un nouveau compte"
+                  >
+                    S&apos;inscrire
+                  </Link>
+                </>
+              )}
               <ThemeToggle />
             </div>
           </div>
@@ -159,6 +201,15 @@ export default function Header() {
                     >
                       Contact
                     </Link>
+                    {user && (
+                      <Link
+                        href={dashboardLink}
+                        className="block px-3 py-2 rounded-md text-sm sm:text-base font-medium text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20 hover:bg-primary-100 dark:hover:bg-primary-900/30"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        Tableau de bord
+                      </Link>
+                    )}
                   </nav>
                 </div>
 
@@ -166,24 +217,39 @@ export default function Header() {
                   <h3 className="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Compte
                   </h3>
-                  <div className="grid grid-cols-2 gap-3 sm:gap-4">
-                    <Link
-                      href="/login"
-                      className="btn-secondary w-full text-center text-sm sm:text-base py-2"
-                      aria-label="Se connecter à votre compte"
-                      onClick={() => setIsMenuOpen(false)}
+                  {userLoading ? (
+                    // État de chargement
+                    <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+                  ) : user ? (
+                    // Utilisateur connecté
+                    <button
+                      onClick={handleSignOut}
+                      className="w-full btn-primary text-center text-sm sm:text-base py-2"
+                      aria-label="Se déconnecter"
                     >
-                      Connexion
-                    </Link>
-                    <Link
-                      href="/register"
-                      className="btn-primary w-full text-center text-sm sm:text-base py-2"
-                      aria-label="Créer un nouveau compte"
-                      onClick={() => setIsMenuOpen(false)}
-                    >
-                      Inscription
-                    </Link>
-                  </div>
+                      Déconnexion
+                    </button>
+                  ) : (
+                    // Utilisateur non connecté
+                    <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                      <Link
+                        href="/login"
+                        className="btn-secondary w-full text-center text-sm sm:text-base py-2"
+                        aria-label="Se connecter à votre compte"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        Connexion
+                      </Link>
+                      <Link
+                        href="/register"
+                        className="btn-primary w-full text-center text-sm sm:text-base py-2"
+                        aria-label="Créer un nouveau compte"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        Inscription
+                      </Link>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

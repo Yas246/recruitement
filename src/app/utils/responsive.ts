@@ -91,32 +91,27 @@ export function useBreakpointBetween(
 }
 
 /**
- * Hook personnalisé pour détecter si l'appareil est mobile en fonction de la largeur d'écran
- * @param breakpoint - La largeur en pixels en dessous de laquelle l'appareil est considéré comme mobile (défaut: 768px)
- * @returns boolean - True si l'appareil est considéré comme mobile
+ * Hook qui vérifie si l'écran est en mode mobile
+ * @param breakpoint Taille en pixels en dessous de laquelle l'écran est considéré comme mobile (768px par défaut)
+ * @returns boolean indiquant si l'écran est en mode mobile
  */
-export function useIsMobile(breakpoint: number = breakpoints.md): boolean {
-  // Par défaut, nous partons du principe que nous ne sommes pas sur mobile
-  // Cela évite les problèmes de correspondance client/serveur pour le SSR
+export function useIsMobile() {
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
-    // Fonction pour vérifier si la taille de l'écran est inférieure au point de rupture
     const checkIsMobile = () => {
-      setIsMobile(window.innerWidth < breakpoint);
+      setIsMobile(window.innerWidth < 768);
     };
 
     // Vérification initiale
     checkIsMobile();
 
-    // Ajout d'un écouteur d'événement pour le redimensionnement
+    // Écouteur pour les changements de taille d'écran
     window.addEventListener("resize", checkIsMobile);
 
-    // Nettoyage de l'écouteur
-    return () => {
-      window.removeEventListener("resize", checkIsMobile);
-    };
-  }, [breakpoint]); // Exécuté à chaque fois que le point de rupture change
+    // Nettoyage
+    return () => window.removeEventListener("resize", checkIsMobile);
+  }, []);
 
   return isMobile;
 }
@@ -143,32 +138,32 @@ export function useIsSmallMobile() {
 }
 
 /**
- * Hook personnalisé pour obtenir la taille actuelle de l'écran
- * @returns Object - Contenant la largeur et la hauteur de l'écran
+ * Hook qui retourne la taille de la fenêtre
+ * @returns Object contenant width et height de la fenêtre
  */
 export function useWindowSize() {
-  // Utilisation d'une valeur par défaut pour éviter les problèmes de SSR
   const [windowSize, setWindowSize] = useState({
-    width: 0,
-    height: 0,
+    width: typeof window !== "undefined" ? window.innerWidth : 0,
+    height: typeof window !== "undefined" ? window.innerHeight : 0,
   });
 
   useEffect(() => {
-    // Fonction pour mettre à jour la taille de l'écran
-    const handleResize = () => {
+    function handleResize() {
       setWindowSize({
         width: window.innerWidth,
         height: window.innerHeight,
       });
-    };
+    }
 
-    // Mettre à jour la taille immédiatement
-    handleResize();
+    // S'assurer que useState est mis à jour immédiatement
+    if (typeof window !== "undefined") {
+      handleResize();
+    }
 
-    // Ajout d'un écouteur d'événement pour le redimensionnement
+    // Ajouter un écouteur pour redimensionner
     window.addEventListener("resize", handleResize);
 
-    // Nettoyage de l'écouteur
+    // Nettoyer l'écouteur lors du démontage
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 

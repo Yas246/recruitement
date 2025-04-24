@@ -1,7 +1,56 @@
+/* eslint-disable*/
 "use client";
 
+import { useAuth } from "@/app/contexts/AuthContext";
+import { formatTimestamp } from "@/app/utils/formatTimestamp";
+import { useIsMobile } from "@/app/utils/responsive";
+import { FirestoreDocument, firestoreService } from "@/firebase";
+import {
+  DocumentChange,
+  onSnapshot,
+  QuerySnapshot,
+  Timestamp,
+} from "firebase/firestore";
 import { useEffect, useRef, useState } from "react";
-import { useIsMobile } from "../utils/responsive";
+
+interface FirestoreMessage extends FirestoreDocument {
+  conversationId: string;
+  senderName: string;
+  senderAvatar?: string;
+  isFromStudent: boolean;
+  content: string;
+  timestamp: string;
+  isRead: boolean;
+  createdAt: Date;
+  files?: MessageFile[];
+}
+
+interface FirestoreConversation extends FirestoreDocument {
+  type?: "individual" | "group";
+  participants?: {
+    id: string;
+    type: "admin" | "student" | "worker" | "artist";
+    name: string;
+  }[];
+  contact: {
+    name: string;
+    title: string;
+    avatar?: string;
+    isAdmin?: boolean;
+  };
+  lastMessage: {
+    content: string;
+    timestamp: string;
+    isFromUser: boolean;
+  };
+  unreadCount: number;
+  userId?: string;
+  userType?: "student" | "worker" | "artist";
+  userName?: string;
+  userEmail?: string;
+  status?: "active" | "resolved" | "pending";
+  updatedAt: Date | Timestamp;
+}
 
 export interface MessageFile {
   name: string;
@@ -10,7 +59,7 @@ export interface MessageFile {
 }
 
 export interface Message {
-  id: number;
+  id: string | number;
   sender: {
     name: string;
     avatar?: string;
@@ -23,7 +72,13 @@ export interface Message {
 }
 
 export interface Conversation {
-  id: number;
+  id: string | number;
+  type: "individual" | "group";
+  participants: {
+    id: string;
+    type: "admin" | "student" | "worker" | "artist";
+    name: string;
+  }[];
   contact: {
     name: string;
     title: string;
@@ -37,35 +92,271 @@ export interface Conversation {
   };
   unreadCount: number;
   messages: Message[];
+  userId?: string;
+  userType?: "student" | "worker" | "artist";
+  userName?: string;
+  userEmail?: string;
+  status?: "active" | "resolved" | "pending";
+  updatedAt?: Date;
 }
 
 interface MessagingSystemProps {
   initialConversations: Conversation[];
   title?: string;
+  onSendMessage?: (
+    conversationId: string | number,
+    content: string
+  ) => Promise<void>;
+  onSelectConversation?: (conversation: Conversation) => void;
+  activeConversation?: Conversation | null;
 }
 
 export default function MessagingSystem({
   initialConversations,
   title = "Messages",
+  onSendMessage,
+  onSelectConversation,
+  activeConversation: externalActiveConversation,
 }: MessagingSystemProps) {
-  // Détecter si l'appareil est mobile
-  const isMobile = useIsMobile();
+  // Trier les conversations initiales par date de dernière mise à jour
+  const sortedInitialConversations = [...initialConversations].sort((a, b) => {
+    const dateA = new Date(a.lastMessage.timestamp);
+    const dateB = new Date(b.lastMessage.timestamp);
+    return dateB.getTime() - dateA.getTime();
+  });
 
-  // État pour les conversations
-  const [conversations, setConversations] =
-    useState<Conversation[]>(initialConversations);
-
-  // État pour la conversation active
+  const [conversations, setConversations] = useState<Conversation[]>(
+    sortedInitialConversations
+  );
   const [activeConversation, setActiveConversation] =
     useState<Conversation | null>(
-      conversations.length > 0 ? conversations[0] : null
+      externalActiveConversation ||
+        (conversations.length > 0 ? conversations[0] : null)
+    );
+  const [newMessage, setNewMessage] = useState("");
+  const isMobile = useIsMobile();
+  const [showConversationList, setShowConversationList] = useState(true);
+  const { userData } = useAuth();
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Mettre à jour activeConversation quand externalActiveConversation change
+  useEffect(() => {
+    if (externalActiveConversation) {
+      setActiveConversation(externalActiveConversation);
+    }
+  }, [externalActiveConversation]);
+
+  // Effet pour charger les conversations depuis Firestore
+  useEffect(() => {
+    const loadConversations = async () => {
+      if (!userData?.id || !userData?.type) return;
+
+      setIsLoading(true);
+      try {
+        // Récupérer les conversations de l'utilisateur
+        const conversationsResult =
+          await firestoreService.queryDocuments<FirestoreConversation>(
+            `${userData.type}s/${userData.id}/conversations`,
+            []
+          );
+
+        if (conversationsResult && conversationsResult.length > 0) {
+          const conversationsWithMessages = await Promise.all(
+            conversationsResult.map(async (conv) => {
+              // Récupérer les messages de cette conversation
+              const messagesResult = await firestoreService.queryDocuments(
+                `${userData.type}s/${userData.id}/conversations/${conv.id}/messages`,
+                []
+              );
+
+              const formattedMessages = messagesResult.map((msg) => ({
+                id: msg.id || Date.now().toString(),
+                sender: {
+                  name: String(
+                    msg.senderName ||
+                      (msg.isFromUser ? "Vous" : conv.contact.name)
+                  ),
+                  avatar: msg.senderAvatar?.toString(),
+                  isAdmin: !msg.isFromUser,
+                },
+                content: String(msg.content || ""),
+                timestamp: String(msg.timestamp || ""),
+                isRead: Boolean(msg.isRead),
+                files: Array.isArray(msg.files)
+                  ? (msg.files as MessageFile[])
+                  : undefined,
+              }));
+
+              // Créer la conversation au format attendu par MessagingSystem
+              const conversation: Conversation = {
+                id:
+                  conv.id ||
+                  `conv_${Date.now()}_${Math.random()
+                    .toString(36)
+                    .substr(2, 9)}`,
+                type: conv.type || "individual",
+                participants: conv.participants || [
+                  {
+                    id: conv.userId || "",
+                    type: conv.userType || "student",
+                    name: conv.userName || "",
+                  },
+                ],
+                contact: conv.contact,
+                lastMessage: conv.lastMessage,
+                unreadCount: conv.unreadCount,
+                messages: formattedMessages,
+                userId: conv.userId,
+                userType: conv.userType,
+                userName: conv.userName,
+                userEmail: conv.userEmail,
+                status: conv.status || "active",
+                updatedAt:
+                  conv.updatedAt instanceof Date ? conv.updatedAt : new Date(),
+              };
+
+              return conversation;
+            })
+          );
+
+          // Trier les conversations par date de dernière mise à jour
+          const sortedConversations = conversationsWithMessages.sort((a, b) => {
+            const dateA = new Date(a.lastMessage.timestamp);
+            const dateB = new Date(b.lastMessage.timestamp);
+            return dateB.getTime() - dateA.getTime();
+          });
+
+          setConversations(sortedConversations);
+
+          // Mettre à jour la conversation active si nécessaire
+          if (sortedConversations.length > 0 && !activeConversation) {
+            setActiveConversation(sortedConversations[0]);
+          } else if (
+            activeConversation &&
+            !sortedConversations.find((c) => c.id === activeConversation.id)
+          ) {
+            // Si la conversation active n'existe plus, sélectionner la première
+            setActiveConversation(
+              sortedConversations.length > 0 ? sortedConversations[0] : null
+            );
+          }
+        } else {
+          // Aucune conversation trouvée
+          setConversations([]);
+          setActiveConversation(null);
+        }
+      } catch (error) {
+        console.error("Erreur lors du chargement des conversations:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (userData?.id && userData?.type) {
+      loadConversations();
+    }
+  }, [userData?.id, userData?.type]);
+
+  // Ajout du listener pour les nouveaux messages
+  useEffect(() => {
+    if (!userData?.id || !activeConversation) return;
+
+    // Référence à la collection de messages
+    const messagesQuery = firestoreService.getQueryBuilder(
+      `students/${userData.id}/conversations/${activeConversation.id}/messages`
     );
 
-  // État pour le message en cours de rédaction
-  const [newMessage, setNewMessage] = useState("");
+    // Configuration du listener
+    const unsubscribe = onSnapshot(messagesQuery, (snapshot: QuerySnapshot) => {
+      snapshot.docChanges().forEach((change: DocumentChange) => {
+        if (change.type === "added") {
+          const newMessage = change.doc.data() as FirestoreMessage;
 
-  // État pour afficher la liste des conversations sur mobile
-  const [showConversationList, setShowConversationList] = useState(true);
+          // Mise à jour de la conversation active avec le nouveau message
+          setActiveConversation((prev) => {
+            if (!prev) return null;
+
+            const updatedMessages = [...prev.messages];
+            const messageExists = updatedMessages.some(
+              (msg) => msg.id === newMessage.id
+            );
+
+            if (!messageExists) {
+              updatedMessages.push({
+                id:
+                  newMessage.id ||
+                  `msg_${Date.now()}_${Math.random()
+                    .toString(36)
+                    .substr(2, 9)}`,
+                sender: {
+                  name:
+                    newMessage.senderName ||
+                    (newMessage.isFromStudent ? "Vous" : prev.contact.name),
+                  avatar: newMessage.senderAvatar,
+                  isAdmin: !newMessage.isFromStudent,
+                },
+                content: newMessage.content,
+                timestamp: formatTimestamp(
+                  newMessage.timestamp || new Date().toISOString()
+                ),
+                isRead: newMessage.isRead,
+                files: newMessage.files || [],
+              });
+            }
+
+            return {
+              ...prev,
+              messages: updatedMessages,
+              lastMessage: {
+                content: newMessage.content,
+                timestamp: formatTimestamp(
+                  newMessage.timestamp || new Date().toISOString()
+                ),
+                isFromUser: newMessage.isFromStudent,
+              },
+              unreadCount: newMessage.isFromStudent
+                ? prev.unreadCount
+                : prev.unreadCount + 1,
+            };
+          });
+
+          // Mise à jour de la liste des conversations avec tri
+          setConversations((prev) => {
+            const updatedConversations = prev.map((conv) =>
+              conv.id === activeConversation.id
+                ? {
+                    ...conv,
+                    lastMessage: {
+                      content: newMessage.content,
+                      timestamp: formatTimestamp(
+                        newMessage.timestamp || new Date().toISOString()
+                      ),
+                      isFromUser: newMessage.isFromStudent,
+                    },
+                    unreadCount: newMessage.isFromStudent
+                      ? conv.unreadCount
+                      : conv.unreadCount + 1,
+                  }
+                : conv
+            );
+            return updatedConversations.sort((a, b) => {
+              const dateA = new Date(a.lastMessage.timestamp);
+              const dateB = new Date(b.lastMessage.timestamp);
+              return dateB.getTime() - dateA.getTime();
+            });
+          });
+        } else if (change.type === "removed") {
+          // Si un message est supprimé, recharger les conversations
+          setConversations(
+            conversations.filter((conv) => conv.id !== activeConversation?.id)
+          );
+        }
+      });
+    });
+
+    // Nettoyage du listener lors du démontage du composant
+    return () => unsubscribe();
+  }, [userData?.id, activeConversation?.id]);
 
   // Référence pour le conteneur de messages pour scroll automatique
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -87,48 +378,55 @@ export default function MessagingSystem({
   }, [isMobile, activeConversation]);
 
   // Gestion de l'envoi d'un nouveau message
-  const handleSendMessage = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSendMessage = async (
+    conversationId: string | number,
+    content: string,
+    files?: MessageFile[]
+  ) => {
+    if (!content.trim() || !activeConversation) return;
 
-    if (!newMessage.trim() || !activeConversation) return;
+    if (onSendMessage) {
+      await onSendMessage(activeConversation.id, content.trim());
+    } else {
+      const updatedMessage: Message = {
+        id: `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        sender: {
+          name: "Vous",
+        },
+        content: content,
+        timestamp: "À l'instant",
+        isRead: true,
+        files: files || [],
+      };
 
-    const updatedMessage: Message = {
-      id: Date.now(),
-      sender: {
-        name: "Vous",
-      },
-      content: newMessage,
-      timestamp: "À l&apos;instant",
-      isRead: true,
-    };
+      // Mise à jour de la conversation active
+      const updatedConversation = {
+        ...activeConversation,
+        messages: [...activeConversation.messages, updatedMessage],
+        lastMessage: {
+          content: content,
+          timestamp: "À l'instant",
+          isFromUser: true,
+        },
+      };
 
-    // Mise à jour de la conversation active
-    const updatedConversation = {
-      ...activeConversation,
-      messages: [...activeConversation.messages, updatedMessage],
-      lastMessage: {
-        content: newMessage,
-        timestamp: "À l&apos;instant",
-        isFromUser: true,
-      },
-    };
+      // Mise à jour de toutes les conversations
+      setConversations(
+        conversations.map((conv) =>
+          conv.id === activeConversation.id ? updatedConversation : conv
+        )
+      );
 
-    // Mise à jour de toutes les conversations
-    setConversations(
-      conversations.map((conv) =>
-        conv.id === activeConversation.id ? updatedConversation : conv
-      )
-    );
-
-    // Mise à jour de la conversation active
-    setActiveConversation(updatedConversation);
+      // Mise à jour de la conversation active
+      setActiveConversation(updatedConversation);
+    }
 
     // Réinitialisation du champ de message
     setNewMessage("");
   };
 
   // Marquer une conversation comme lue
-  const markAsRead = (conversationId: number) => {
+  const markAsRead = (conversationId: string | number) => {
     const updatedConversations = conversations.map((conv) => {
       if (conv.id === conversationId) {
         const updatedMessages = conv.messages.map((msg) => ({
@@ -162,6 +460,9 @@ export default function MessagingSystem({
   const handleSelectConversation = (conversation: Conversation) => {
     setActiveConversation(conversation);
     markAsRead(conversation.id);
+    if (onSelectConversation) {
+      onSelectConversation(conversation);
+    }
 
     if (isMobile) {
       setShowConversationList(false);
@@ -434,7 +735,10 @@ export default function MessagingSystem({
               {/* Formulaire d'envoi */}
               <div className="p-4 border-t border-gray-200 dark:border-gray-700">
                 <form
-                  onSubmit={handleSendMessage}
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    handleSendMessage(activeConversation.id, newMessage, []);
+                  }}
                   className="flex items-center"
                 >
                   <button

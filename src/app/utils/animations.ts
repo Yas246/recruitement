@@ -5,7 +5,7 @@ export const initAnimations = () => {
   gsap.registerPlugin(ScrollTrigger);
 
   // Animer les éléments avec la classe fade-in
-  gsap.utils.toArray(".fade-in").forEach((element: any) => {
+  gsap.utils.toArray<HTMLElement>(".fade-in").forEach((element) => {
     gsap.fromTo(
       element,
       { opacity: 0, y: 30 },
@@ -23,7 +23,7 @@ export const initAnimations = () => {
   });
 
   // Animation des statistiques
-  gsap.utils.toArray(".stat-number").forEach((element: any) => {
+  gsap.utils.toArray<HTMLElement>(".stat-number").forEach((element) => {
     gsap.fromTo(
       element,
       { textContent: 0 },

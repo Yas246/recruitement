@@ -208,4 +208,4 @@ Pour toute question ou suggestion, n'hésitez pas à nous contacter à [contact@
 
 ---
 
-© 2023 OMSHINA International. Tous droits réservés.
+© 2025 OMSHINA International. Tous droits réservés.

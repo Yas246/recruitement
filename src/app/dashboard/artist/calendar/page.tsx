@@ -1,96 +1,77 @@
 "use client";
 
 import Calendar, { Event } from "@/app/components/Calendar";
-import { useState } from "react";
+import { useAuth } from "@/app/contexts/AuthContext";
+import { useToast } from "@/app/hooks/useToast";
+import { FirestoreDocument, firestoreService } from "@/firebase";
+import { useEffect, useState } from "react";
+
+interface CalendarEvent extends FirestoreDocument {
+  title: string;
+  description: string;
+  date: string;
+  time: string;
+  type: "meeting" | "deadline" | "workshop" | "info";
+  location?: string;
+  link?: string;
+  isImportant?: boolean;
+  artistId: string;
+  createdBy: string;
+  status: "pending" | "confirmed" | "cancelled";
+}
 
 export default function ArtistCalendarPage() {
-  // Événements fictifs pour la démo adaptés au contexte artistique
-  const [events] = useState<Event[]>([
-    {
-      id: 1,
-      title: "Audition Festival International",
-      description:
-        "Audition pour participation au Festival International des Arts de Paris",
-      date: "2023-06-12",
-      time: "14:00",
-      type: "meeting",
-      location: "Centre Culturel Georges Pompidou",
-      isImportant: true,
-    },
-    {
-      id: 2,
-      title: "Date limite soumission portfolio",
-      description:
-        "Date limite pour soumettre votre portfolio pour l'exposition 'Nouveaux Talents'",
-      date: "2023-06-18",
-      time: "23:59",
-      type: "deadline",
-      isImportant: true,
-    },
-    {
-      id: 3,
-      title: "Webinaire sur les droits d'auteur",
-      description:
-        "Présentation des aspects juridiques pour les artistes internationaux",
-      date: "2023-06-20",
-      time: "18:00",
-      type: "info",
-      link: "https://zoom.us/j/123456789",
-    },
-    {
-      id: 4,
-      title: "Atelier création numérique",
-      description:
-        "Atelier pratique sur les outils de création numérique pour artistes",
-      date: "2023-06-24",
-      time: "10:00",
-      type: "workshop",
-      location: "Maison des Arts Numériques",
-      link: "https://teams.microsoft.com/l/meetup-join/...",
-    },
-    {
-      id: 5,
-      title: "Vernissage exposition collective",
-      description:
-        "Présentation des œuvres sélectionnées pour l'exposition internationale",
-      date: "2023-06-28",
-      time: "19:00",
-      type: "meeting",
-      location: "Galerie d'Art Contemporain",
-    },
-    {
-      id: 6,
-      title: "Performance live streaming",
-      description:
-        "Performance en direct pour le public international - préparation technique à 16h",
-      date: "2023-07-02",
-      time: "18:00",
-      type: "meeting",
-      location: "Studio 42",
-      link: "https://livestream.com/channel/performance",
-      isImportant: true,
-    },
-    {
-      id: 7,
-      title: "Rencontre avec galeriste",
-      description:
-        "Entretien avec M. Leroy, galeriste spécialisé dans l'art contemporain",
-      date: "2023-07-05",
-      time: "11:30",
-      type: "meeting",
-      location: "Café des Artistes",
-    },
-    {
-      id: 8,
-      title: "Date limite candidature résidence artistique",
-      description:
-        "Dernier jour pour postuler à la résidence artistique de Berlin",
-      date: "2023-07-10",
-      time: "23:59",
-      type: "deadline",
-      isImportant: true,
-    },
-  ]);
+  const { user } = useAuth();
+  const toast = useToast();
+  const [events, setEvents] = useState<Event[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const loadEvents = async () => {
+      if (!user?.uid) {
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        // Récupérer les événements de l'artiste depuis la sous-collection events
+        const artistEvents =
+          await firestoreService.getAllDocuments<CalendarEvent>(
+            `artists/${user.uid}/events`
+          );
+
+        // Convertir les événements Firestore en événements du calendrier
+        const formattedEvents: Event[] = artistEvents.map((event, index) => ({
+          id: index + 1, // Utiliser l'index comme ID numérique
+          title: event.title,
+          description: event.description,
+          date: event.date,
+          time: event.time,
+          type: event.type,
+          location: event.location,
+          link: event.link,
+          isImportant: event.isImportant,
+        }));
+
+        setEvents(formattedEvents);
+      } catch (error) {
+        console.error("Erreur lors du chargement des événements:", error);
+        toast.error("Impossible de charger vos événements");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadEvents();
+  }, [user?.uid, toast]);
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-600"></div>
+      </div>
+    );
+  }
 
   return <Calendar events={events} title="Calendrier Artistique" />;
 }

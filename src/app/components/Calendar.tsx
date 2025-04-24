@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useIsMobile } from "../utils/responsive";
 
 export interface Event {
@@ -20,73 +20,144 @@ interface EventDay {
   formattedDate: string;
   dayName: string;
   events: Event[];
+  isCurrentMonth: boolean;
 }
 
 interface CalendarProps {
   events: Event[];
   title?: string;
-  currentMonth?: string;
 }
 
 export default function Calendar({
   events,
   title = "Calendrier",
-  currentMonth = "Juin 2023",
 }: CalendarProps) {
   const isMobile = useIsMobile();
-
-  // Création d'un tableau avec les jours du mois et leurs événements
-  const [eventDays] = useState<EventDay[]>(() => {
-    // Pour la démo, nous créons une structure simplifiée
-    const daysInMonth = [
-      { date: "2023-06-05", formattedDate: "5", dayName: "Lun" },
-      { date: "2023-06-06", formattedDate: "6", dayName: "Mar" },
-      { date: "2023-06-07", formattedDate: "7", dayName: "Mer" },
-      { date: "2023-06-08", formattedDate: "8", dayName: "Jeu" },
-      { date: "2023-06-09", formattedDate: "9", dayName: "Ven" },
-      { date: "2023-06-10", formattedDate: "10", dayName: "Sam" },
-      { date: "2023-06-11", formattedDate: "11", dayName: "Dim" },
-      { date: "2023-06-12", formattedDate: "12", dayName: "Lun" },
-      { date: "2023-06-13", formattedDate: "13", dayName: "Mar" },
-      { date: "2023-06-14", formattedDate: "14", dayName: "Mer" },
-      { date: "2023-06-15", formattedDate: "15", dayName: "Jeu" },
-      { date: "2023-06-16", formattedDate: "16", dayName: "Ven" },
-      { date: "2023-06-17", formattedDate: "17", dayName: "Sam" },
-      { date: "2023-06-18", formattedDate: "18", dayName: "Dim" },
-      { date: "2023-06-19", formattedDate: "19", dayName: "Lun" },
-      { date: "2023-06-20", formattedDate: "20", dayName: "Mar" },
-      { date: "2023-06-21", formattedDate: "21", dayName: "Mer" },
-      { date: "2023-06-22", formattedDate: "22", dayName: "Jeu" },
-      { date: "2023-06-23", formattedDate: "23", dayName: "Ven" },
-      { date: "2023-06-24", formattedDate: "24", dayName: "Sam" },
-      { date: "2023-06-25", formattedDate: "25", dayName: "Dim" },
-      { date: "2023-06-26", formattedDate: "26", dayName: "Lun" },
-      { date: "2023-06-27", formattedDate: "27", dayName: "Mar" },
-      { date: "2023-06-28", formattedDate: "28", dayName: "Mer" },
-      { date: "2023-06-29", formattedDate: "29", dayName: "Jeu" },
-      { date: "2023-06-30", formattedDate: "30", dayName: "Ven" },
-    ];
-
-    // Associer les événements aux jours
-    return daysInMonth.map((day) => ({
-      ...day,
-      events: events.filter((event) => event.date === day.date),
-    }));
-  });
-
-  // État pour stocker les détails de l'événement sélectionné
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [eventDays, setEventDays] = useState<EventDay[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
-
-  // État pour gérer l'affichage sur mobile (liste ou calendrier)
   const [mobileView, setMobileView] = useState<"calendar" | "upcoming">(
     "calendar"
   );
 
+  // Format the current month label in French
+  const currentMonthLabel = new Intl.DateTimeFormat("fr-FR", {
+    month: "long",
+    year: "numeric",
+  }).format(currentMonth);
+
+  // Fonction pour obtenir le premier jour du mois (0 = Dimanche, 1 = Lundi, etc.)
+  const getFirstDayOfMonth = (date: Date) => {
+    const firstDay = new Date(date.getFullYear(), date.getMonth(), 1).getDay();
+    return firstDay === 0 ? 6 : firstDay - 1; // Convertir pour commencer par Lundi
+  };
+
+  // Fonction pour obtenir le nombre de jours dans le mois
+  const getDaysInMonth = (date: Date) => {
+    return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+  };
+
+  // Fonction pour générer les jours du mois
+  const generateDaysInMonth = useCallback(() => {
+    const firstDay = getFirstDayOfMonth(currentMonth);
+    const daysInMonth = getDaysInMonth(currentMonth);
+    const days: EventDay[] = [];
+
+    // Ajouter les jours du mois précédent si nécessaire
+    const prevMonth = new Date(currentMonth);
+    prevMonth.setMonth(prevMonth.getMonth() - 1);
+    const prevMonthDays = getDaysInMonth(prevMonth);
+
+    for (let i = 0; i < firstDay; i++) {
+      const day = prevMonthDays - firstDay + i + 1;
+      const date = new Date(prevMonth.getFullYear(), prevMonth.getMonth(), day);
+      days.push({
+        date: date.toISOString().split("T")[0],
+        formattedDate: day.toString(),
+        dayName: ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"][
+          date.getDay()
+        ],
+        events: [],
+        isCurrentMonth: false,
+      });
+    }
+
+    // Ajouter les jours du mois en cours
+    for (let i = 1; i <= daysInMonth; i++) {
+      const date = new Date(
+        currentMonth.getFullYear(),
+        currentMonth.getMonth(),
+        i
+      );
+      days.push({
+        date: date.toISOString().split("T")[0],
+        formattedDate: i.toString(),
+        dayName: ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"][
+          date.getDay()
+        ],
+        events: [],
+        isCurrentMonth: true,
+      });
+    }
+
+    // Ajouter les jours du mois suivant si nécessaire
+    const remainingDays = 42 - days.length; // 6 semaines complètes
+    const nextMonth = new Date(currentMonth);
+    nextMonth.setMonth(nextMonth.getMonth() + 1);
+
+    for (let i = 1; i <= remainingDays; i++) {
+      const date = new Date(nextMonth.getFullYear(), nextMonth.getMonth(), i);
+      days.push({
+        date: date.toISOString().split("T")[0],
+        formattedDate: i.toString(),
+        dayName: ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"][
+          date.getDay()
+        ],
+        events: [],
+        isCurrentMonth: false,
+      });
+    }
+
+    return days;
+  }, [currentMonth]);
+
+  // Mettre à jour les jours et les événements quand le mois change
+  useEffect(() => {
+    const days = generateDaysInMonth();
+    const daysWithEvents = days.map((day) => ({
+      ...day,
+      events: events.filter((event) => event.date === day.date),
+    }));
+    setEventDays(daysWithEvents);
+  }, [currentMonth, events, generateDaysInMonth]);
+
+  // Navigation entre les mois
+  const handlePreviousMonth = () => {
+    setCurrentMonth((prev) => {
+      const newDate = new Date(prev);
+      newDate.setMonth(prev.getMonth() - 1);
+      return newDate;
+    });
+  };
+
+  const handleNextMonth = () => {
+    setCurrentMonth((prev) => {
+      const newDate = new Date(prev);
+      newDate.setMonth(prev.getMonth() + 1);
+      return newDate;
+    });
+  };
+
   // Événements à venir pour l'affichage dans la barre latérale
-  const upcomingEvents = events
-    .filter((event) => new Date(event.date) >= new Date())
-    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-    .slice(0, 5);
+  const upcomingEvents = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    return events
+      .filter((event) => new Date(event.date) >= today)
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+      .slice(0, 5);
+  }, [events]);
 
   // Fonction pour obtenir la classe CSS en fonction du type d'événement
   const getEventTypeClass = (type: Event["type"]) => {
@@ -168,6 +239,11 @@ export default function Calendar({
     }
   };
 
+  // Fonction pour générer une clé unique pour les événements du jour
+  const generateEventKey = (day: string, eventId: number) => {
+    return `${day}-event-${eventId}`;
+  };
+
   return (
     <div>
       <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-8">
@@ -207,10 +283,13 @@ export default function Calendar({
           <div className="glass-card flex-1">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                {currentMonth}
+                {currentMonthLabel}
               </h2>
               <div className="flex space-x-2">
-                <button className="p-2 rounded-md bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600">
+                <button
+                  onClick={handlePreviousMonth}
+                  className="p-2 rounded-md bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600"
+                >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     className="h-5 w-5"
@@ -224,7 +303,10 @@ export default function Calendar({
                     />
                   </svg>
                 </button>
-                <button className="p-2 rounded-md bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600">
+                <button
+                  onClick={handleNextMonth}
+                  className="p-2 rounded-md bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600"
+                >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     className="h-5 w-5"
@@ -243,14 +325,16 @@ export default function Calendar({
 
             <div className="grid grid-cols-7 gap-2">
               {/* Jours de la semaine */}
-              {["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"].map((day) => (
-                <div
-                  key={day}
-                  className="text-center font-medium text-gray-600 dark:text-gray-400 py-2"
-                >
-                  {isMobile ? day.charAt(0) : day}
-                </div>
-              ))}
+              {["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"].map(
+                (day, index) => (
+                  <div
+                    key={`weekday-${index}`}
+                    className="text-center font-medium text-gray-600 dark:text-gray-400 py-2"
+                  >
+                    {isMobile ? day.charAt(0) : day}
+                  </div>
+                )
+              )}
 
               {/* Jours du mois */}
               {eventDays.map((day) => (
@@ -258,7 +342,7 @@ export default function Calendar({
                   key={day.date}
                   className={`border border-gray-200 dark:border-gray-700 rounded-md p-2 hover:bg-gray-50 dark:hover:bg-gray-800/30 ${
                     isMobile ? "min-h-[70px]" : "min-h-[100px]"
-                  }`}
+                  } ${!day.isCurrentMonth ? "opacity-50" : ""}`}
                 >
                   <div className="text-right mb-2">
                     <span
@@ -275,7 +359,7 @@ export default function Calendar({
                   <div className="space-y-1">
                     {day.events.slice(0, isMobile ? 1 : 3).map((event) => (
                       <div
-                        key={event.id}
+                        key={generateEventKey(day.date, event.id)}
                         className={`p-1 rounded text-xs cursor-pointer ${getEventTypeClass(
                           event.type
                         )}`}
@@ -312,7 +396,7 @@ export default function Calendar({
                 {upcomingEvents.length > 0 ? (
                   upcomingEvents.map((event) => (
                     <div
-                      key={event.id}
+                      key={`upcoming-${event.id}`}
                       className="p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/30 cursor-pointer"
                       onClick={() => setSelectedEvent(event)}
                     >
@@ -342,11 +426,13 @@ export default function Calendar({
                               />
                             </svg>
                             <span>
-                              {event.date
-                                .split("-")
-                                .reverse()
-                                .slice(0, 2)
-                                .join("/")}{" "}
+                              {new Date(event.date).toLocaleDateString(
+                                "fr-FR",
+                                {
+                                  day: "numeric",
+                                  month: "long",
+                                }
+                              )}{" "}
                               à {event.time}
                             </span>
                           </div>
