@@ -7,11 +7,12 @@ import {
   firestoreService,
   storageService,
 } from "@/firebase";
-import { where } from "firebase/firestore";
+import { Timestamp, where } from "firebase/firestore";
 import { useEffect, useRef, useState } from "react";
 
 // Types pour les documents
-interface DocumentMetadata extends FirestoreDocument {
+interface DocumentMetadata
+  extends Omit<FirestoreDocument, "createdAt" | "updatedAt"> {
   id: string;
   studentId: string;
   name: string;
@@ -23,6 +24,8 @@ interface DocumentMetadata extends FirestoreDocument {
   required: boolean;
   fileUrl?: string;
   fileName?: string;
+  createdAt?: Date | Timestamp;
+  updatedAt?: Date | Timestamp;
 }
 
 export default function StudentDocuments() {
@@ -33,17 +36,26 @@ export default function StudentDocuments() {
     useState<DocumentMetadata | null>(null);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState<string | null>(null); // ID du document en cours d'upload
+  const [initialized, setInitialized] = useState(false);
 
   // Références pour les input file
   const fileInputRef = useRef<HTMLInputElement>(null);
   const fileInputDetailRef = useRef<HTMLInputElement>(null);
+  const toastRef = useRef(toast);
+
+  // Update toast ref when toast changes
+  useEffect(() => {
+    toastRef.current = toast;
+  }, [toast]);
 
   // Charger les documents de l'étudiant
   useEffect(() => {
-    const fetchDocuments = async () => {
-      if (!userData?.id) return;
+    // Éviter les exécutions multiples
+    if (initialized || !userData?.id) return;
 
+    const fetchDocuments = async () => {
       try {
+        setLoading(true);
         // Récupérer les documents depuis Firestore
         const docsResult =
           await firestoreService.queryDocuments<DocumentMetadata>(
@@ -101,40 +113,62 @@ export default function StudentDocuments() {
           ];
 
           // Créer les documents par défaut s'ils n'existent pas
-          const newDocs = await Promise.all(
-            defaultDocuments.map(async (doc) => {
-              const docWithStudentId: DocumentMetadata = {
-                id: doc.id as string,
-                name: doc.name as string,
-                type: doc.type as string,
-                status: doc.status as
-                  | "pending"
-                  | "approved"
-                  | "rejected"
-                  | "not_uploaded",
-                required: doc.required as boolean,
-                studentId: userData.id,
-              };
-              await firestoreService.createDocument(
-                "studentDocuments",
-                `${userData.id}_${doc.id}`,
-                docWithStudentId
-              );
-              return docWithStudentId;
-            })
-          );
-          setDocuments(newDocs);
+          try {
+            const newDocs = await Promise.all(
+              defaultDocuments.map(async (doc) => {
+                const docWithStudentId: DocumentMetadata = {
+                  id: doc.id as string,
+                  name: doc.name as string,
+                  type: doc.type as string,
+                  status: doc.status as
+                    | "pending"
+                    | "approved"
+                    | "rejected"
+                    | "not_uploaded",
+                  required: doc.required as boolean,
+                  studentId: userData.id,
+                };
+                // Utiliser l'ID composé pour garantir l'unicité des documents
+                const documentId = `${userData.id}_${doc.id}`;
+
+                // Vérifier si le document existe déjà
+                const existingDoc = await firestoreService.getDocument(
+                  "studentDocuments",
+                  documentId
+                );
+
+                if (!existingDoc) {
+                  // Créer le document s'il n'existe pas
+                  await firestoreService.createDocument(
+                    "studentDocuments",
+                    documentId,
+                    docWithStudentId
+                  );
+                }
+
+                return docWithStudentId;
+              })
+            );
+            setDocuments(newDocs);
+            toastRef.current.success("Documents initialisés avec succès");
+          } catch (error) {
+            console.error("Erreur lors de la création des documents:", error);
+            toastRef.current.error(
+              "Erreur lors de l'initialisation des documents"
+            );
+          }
         }
       } catch (error) {
         console.error("Erreur lors du chargement des documents:", error);
-        toast.error("Erreur lors du chargement des documents");
+        toastRef.current.error("Erreur lors du chargement des documents");
       } finally {
         setLoading(false);
+        setInitialized(true);
       }
     };
 
     fetchDocuments();
-  }, [userData?.id, toast]);
+  }, [userData?.id, initialized]);
 
   // Fonction pour téléverser un document
   const handleUploadFile = async (docId: string, file: File) => {
@@ -145,7 +179,7 @@ export default function StudentDocuments() {
       const selectedDoc = documents.find((doc) => doc.id === docId);
 
       if (!selectedDoc) {
-        toast.error("Document non trouvé");
+        toastRef.current.error("Document non trouvé");
         return;
       }
 
@@ -154,8 +188,19 @@ export default function StudentDocuments() {
       const fileExtension = file.name.split(".").pop()?.toLowerCase();
 
       if (!fileExtension || !allowedTypes.includes(fileExtension)) {
-        toast.error(
-          `Type de fichier non supporté. Types acceptés: ${selectedDoc.type.toUpperCase()}`
+        toastRef.current.error(
+          `Type de fichier non supporté. Types acceptés: ${allowedTypes
+            .map((type) => `.${type}`)
+            .join(", ")}`
+        );
+        return;
+      }
+
+      // Vérifier la taille du fichier (max 10 MB)
+      const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB en octets
+      if (file.size > MAX_FILE_SIZE) {
+        toastRef.current.error(
+          "Le fichier est trop volumineux. Taille maximale: 10 MB"
         );
         return;
       }
@@ -174,18 +219,22 @@ export default function StudentDocuments() {
         "documents"
       );
 
+      // Feedback pour l'utilisateur
+      toastRef.current.loading("Téléversement en cours...");
+
       // Téléverser le fichier vers Firebase Storage
       const fileUrl = await storageService.uploadFile(filePath, file);
 
       // Mettre à jour les métadonnées du document dans Firestore
       const updatedDoc: Partial<DocumentMetadata> = {
         status: "pending",
-        uploadDate: new Date().toLocaleDateString(),
+        uploadDate: new Date().toISOString().split("T")[0],
         fileSize: fileSizeFormatted,
         fileUrl: fileUrl,
         fileName: file.name,
       };
 
+      // Mettre à jour le document dans Firestore
       await firestoreService.updateDocument(
         "studentDocuments",
         `${userData.id}_${docId}`,
@@ -206,10 +255,32 @@ export default function StudentDocuments() {
         );
       }
 
-      toast.success("Document téléversé avec succès");
+      toastRef.current.dismiss();
+      toastRef.current.success("Document téléversé avec succès");
     } catch (error) {
       console.error("Erreur lors du téléversement:", error);
-      toast.error("Erreur lors du téléversement du document");
+      toastRef.current.dismiss();
+
+      let errorMessage = "Erreur lors du téléversement du document";
+
+      // Vérifier si l'erreur vient de Firebase
+      if (error instanceof Error) {
+        if (error.message.includes("storage/unauthorized")) {
+          errorMessage = "Vous n'êtes pas autorisé à téléverser des fichiers";
+        } else if (error.message.includes("storage/quota-exceeded")) {
+          errorMessage = "Quota de stockage dépassé";
+        } else if (error.message.includes("storage/canceled")) {
+          errorMessage = "Téléversement annulé";
+        } else if (error.message.includes("storage/unknown")) {
+          errorMessage = "Une erreur inconnue s'est produite";
+        } else if (error.message.includes("storage/object-not-found")) {
+          errorMessage = "Le fichier n'a pas été trouvé";
+        } else if (error.message.includes("network-error")) {
+          errorMessage = "Problème de connexion réseau";
+        }
+      }
+
+      toastRef.current.error(errorMessage);
     } finally {
       setUploading(null);
     }
@@ -244,25 +315,14 @@ export default function StudentDocuments() {
       const doc = documents.find((d) => d.id === docId);
 
       if (doc?.fileUrl) {
-        // Option 1: Redirection vers l'URL directe
+        // Ouvrir l'URL dans un nouvel onglet
         window.open(doc.fileUrl, "_blank");
-
-        // Option 2: Téléchargement en utilisant fetch puis création d'un lien temporaire
-        // const response = await fetch(doc.fileUrl);
-        // const blob = await response.blob();
-        // const url = window.URL.createObjectURL(blob);
-        // const a = document.createElement('a');
-        // a.href = url;
-        // a.download = doc.fileName || `${doc.name}.pdf`;
-        // document.body.appendChild(a);
-        // a.click();
-        // document.body.removeChild(a);
       } else {
-        toast.error("Aucun fichier disponible pour ce document");
+        toastRef.current.error("Aucun fichier disponible pour ce document");
       }
     } catch (error) {
       console.error("Erreur lors du téléchargement:", error);
-      toast.error("Erreur lors du téléchargement du document");
+      toastRef.current.error("Erreur lors du téléchargement du document");
     }
   };
 

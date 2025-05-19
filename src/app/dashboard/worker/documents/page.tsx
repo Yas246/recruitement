@@ -3,7 +3,11 @@
 import WorkerProgressBar from "@/app/components/WorkerProgressBar";
 import { useAuth } from "@/app/contexts/AuthContext";
 import { useToast } from "@/app/hooks/useToast";
-import { FirestoreDocument, firestoreService } from "@/firebase";
+import {
+  FirestoreDocument,
+  firestoreService,
+  storageService,
+} from "@/firebase";
 import { useEffect, useRef, useState } from "react";
 
 interface WorkerDocument extends FirestoreDocument {
@@ -15,6 +19,7 @@ interface WorkerDocument extends FirestoreDocument {
   feedback?: string;
   required: boolean;
   fileUrl?: string;
+  fileName?: string;
 }
 
 export default function WorkerDocuments() {
@@ -25,13 +30,14 @@ export default function WorkerDocuments() {
     useState<WorkerDocument | null>(null);
   const [documents, setDocuments] = useState<WorkerDocument[]>([]);
   const [uploadingDoc, setUploadingDoc] = useState<string | null>(null);
+  const [initialized, setInitialized] = useState(false);
 
   // Référence à l'input file caché
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const loadDocuments = async () => {
-      if (!user?.uid) {
+      if (!user?.uid || initialized) {
         setIsLoading(false);
         return;
       }
@@ -42,7 +48,7 @@ export default function WorkerDocuments() {
         );
         if (!docs || docs.length === 0) {
           // Documents par défaut si aucun n'existe
-          setDocuments([
+          const defaultDocuments: WorkerDocument[] = [
             {
               id: "cv",
               name: "Curriculum Vitae",
@@ -92,10 +98,24 @@ export default function WorkerDocuments() {
               status: "not_uploaded",
               required: false,
             },
-          ]);
+          ];
+
+          // Créer les documents par défaut dans Firestore
+          await Promise.all(
+            defaultDocuments.map((doc) =>
+              firestoreService.createDocument(
+                `workers/${user.uid}/documents`,
+                doc.id as string,
+                doc
+              )
+            )
+          );
+
+          setDocuments(defaultDocuments);
         } else {
           setDocuments(docs);
         }
+        setInitialized(true);
       } catch (error) {
         console.error("Erreur lors du chargement des documents:", error);
         toast.error("Impossible de charger vos documents");
@@ -105,7 +125,7 @@ export default function WorkerDocuments() {
     };
 
     loadDocuments();
-  }, [user?.uid, toast]);
+  }, [user?.uid, initialized, toast]);
 
   const handleUpload = async (docId: string) => {
     if (!docId) return;
@@ -113,6 +133,128 @@ export default function WorkerDocuments() {
     if (fileInputRef.current) {
       setUploadingDoc(docId);
       fileInputRef.current.click();
+    }
+  };
+
+  // Fonction pour gérer le téléversement de fichier
+  const handleFileSelected = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file || !uploadingDoc || !user?.uid) {
+      setUploadingDoc(null);
+      return;
+    }
+
+    try {
+      const selectedDoc = documents.find((doc) => doc.id === uploadingDoc);
+
+      if (!selectedDoc) {
+        toast.error("Document non trouvé");
+        return;
+      }
+
+      // Vérifier le type de fichier
+      const allowedTypes = selectedDoc.type.split(",");
+      const fileExtension = file.name.split(".").pop()?.toLowerCase();
+
+      if (!fileExtension || !allowedTypes.includes(fileExtension)) {
+        toast.error(
+          `Type de fichier non supporté. Types acceptés: ${allowedTypes
+            .map((type) => `.${type}`)
+            .join(", ")}`
+        );
+        return;
+      }
+
+      // Vérifier la taille du fichier (max 10 MB)
+      const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB en octets
+      if (file.size > MAX_FILE_SIZE) {
+        toast.error("Le fichier est trop volumineux. Taille maximale: 10 MB");
+        return;
+      }
+
+      // Calculer la taille du fichier
+      const fileSizeKB = Math.round(file.size / 1024);
+      const fileSizeFormatted =
+        fileSizeKB >= 1024
+          ? `${(fileSizeKB / 1024).toFixed(1)} MB`
+          : `${fileSizeKB} KB`;
+
+      // Générer le chemin de stockage
+      const filePath = storageService.generateFilePath(
+        user.uid,
+        file.name,
+        "worker_documents"
+      );
+
+      // Feedback pour l'utilisateur
+      toast.loading("Téléversement en cours...");
+
+      // Téléverser le fichier vers Firebase Storage
+      const fileUrl = await storageService.uploadFile(filePath, file);
+
+      // Mettre à jour les métadonnées du document dans Firestore
+      const updatedDoc: Partial<WorkerDocument> = {
+        status: "pending",
+        uploadDate: new Date().toISOString().split("T")[0],
+        fileSize: fileSizeFormatted,
+        fileUrl: fileUrl,
+        fileName: file.name,
+      };
+
+      // Mettre à jour le document dans Firestore
+      await firestoreService.updateDocument(
+        `workers/${user.uid}/documents`,
+        uploadingDoc,
+        updatedDoc
+      );
+
+      // Mettre à jour l'état local
+      setDocuments((prevDocs) =>
+        prevDocs.map((doc) =>
+          doc.id === uploadingDoc ? { ...doc, ...updatedDoc } : doc
+        )
+      );
+
+      // Mettre à jour le document sélectionné
+      if (selectedDocument?.id === uploadingDoc) {
+        setSelectedDocument((prev) =>
+          prev ? { ...prev, ...updatedDoc } : null
+        );
+      }
+
+      toast.dismiss();
+      toast.success("Document téléversé avec succès");
+    } catch (error) {
+      console.error("Erreur lors du téléversement:", error);
+      toast.dismiss();
+
+      let errorMessage = "Erreur lors du téléversement du document";
+
+      // Vérifier si l'erreur vient de Firebase
+      if (error instanceof Error) {
+        if (error.message.includes("storage/unauthorized")) {
+          errorMessage = "Vous n'êtes pas autorisé à téléverser des fichiers";
+        } else if (error.message.includes("storage/quota-exceeded")) {
+          errorMessage = "Quota de stockage dépassé";
+        } else if (error.message.includes("storage/canceled")) {
+          errorMessage = "Téléversement annulé";
+        } else if (error.message.includes("storage/unknown")) {
+          errorMessage = "Une erreur inconnue s'est produite";
+        } else if (error.message.includes("storage/object-not-found")) {
+          errorMessage = "Le fichier n'a pas été trouvé";
+        } else if (error.message.includes("network-error")) {
+          errorMessage = "Problème de connexion réseau";
+        }
+      }
+
+      toast.error(errorMessage);
+    } finally {
+      setUploadingDoc(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
     }
   };
 
@@ -272,7 +414,10 @@ export default function WorkerDocuments() {
                     ) : (
                       <div className="flex space-x-2">
                         <button
-                          onClick={(e) => e.stopPropagation()}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (doc.id) handleUpload(doc.id);
+                          }}
                           className="w-full sm:w-auto px-2 sm:px-3 py-1 sm:py-1.5 bg-gray-200 text-gray-700 text-xs sm:text-sm rounded-lg hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600 transition-colors"
                         >
                           Remplacer
@@ -333,7 +478,7 @@ export default function WorkerDocuments() {
                         />
                       </svg>
                       <p className="mt-2 text-xs sm:text-sm text-gray-600 dark:text-gray-400">
-                        Aperçu du document
+                        {selectedDocument.fileName || "Aperçu du document"}
                       </p>
                     </div>
                   )}
@@ -442,8 +587,17 @@ export default function WorkerDocuments() {
                   >
                     Télécharger
                   </button>
-                  <button className="flex-1 btn-primary py-1.5 sm:py-2 text-xs sm:text-sm">
-                    Remplacer
+                  <button
+                    onClick={() => {
+                      if (selectedDocument.id)
+                        handleUpload(selectedDocument.id);
+                    }}
+                    className="flex-1 btn-primary py-1.5 sm:py-2 text-xs sm:text-sm"
+                    disabled={uploadingDoc === selectedDocument.id}
+                  >
+                    {uploadingDoc === selectedDocument.id
+                      ? "Téléversement..."
+                      : "Remplacer"}
                   </button>
                 </div>
               )}
@@ -474,6 +628,14 @@ export default function WorkerDocuments() {
           )}
         </div>
       </div>
+
+      {/* Input file caché */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        className="hidden"
+        onChange={handleFileSelected}
+      />
     </div>
   );
 }

@@ -2,7 +2,7 @@
 
 import AdminRoute from "@/app/components/AdminRoute";
 import { ProgressStep } from "@/app/types/common";
-import { firestoreService, FirestoreDocument } from "@/firebase";
+import { FirestoreDocument, firestoreService } from "@/firebase";
 import { serverTimestamp, Timestamp, where } from "firebase/firestore";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -96,6 +96,58 @@ interface UserDocuments extends FirestoreDocument {
   id?: string;
 }
 
+interface FirestoreDocumentData extends FirestoreDocument {
+  id: string;
+  name: string;
+  type: string;
+  status: "pending" | "approved" | "rejected" | "not_uploaded";
+  uploadDate?: string;
+  fileSize?: string;
+  feedback?: string;
+  required: boolean;
+  fileUrl?: string;
+}
+
+interface ArtistDocumentsDocument extends FirestoreDocument {
+  documents: FirestoreDocumentData[];
+  progressSteps?: {
+    id: number;
+    name: string;
+    completed: boolean;
+    active?: boolean;
+    pending?: boolean;
+  }[];
+}
+
+// Interface pour les documents étudiants stockés dans Firebase
+interface StudentDocument extends FirestoreDocument {
+  id: string;
+  studentId: string;
+  name: string;
+  type: string;
+  status: "pending" | "approved" | "rejected" | "not_uploaded";
+  uploadDate?: string;
+  fileSize?: string;
+  feedback?: string;
+  required: boolean;
+  fileUrl?: string;
+  fileName?: string;
+}
+
+// Interface pour les documents des travailleurs et artistes
+interface WorkerArtistDocument extends FirestoreDocument {
+  id: string;
+  name: string;
+  type: string;
+  status: "pending" | "approved" | "rejected" | "not_uploaded";
+  uploadDate?: string;
+  fileSize?: string;
+  feedback?: string;
+  required: boolean;
+  fileUrl?: string;
+  fileName?: string;
+}
+
 export default function ApplicationDetail() {
   const { id } = useParams() as { id: string };
 
@@ -106,10 +158,22 @@ export default function ApplicationDetail() {
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [notes, setNotes] = useState("");
+  const [updatingDocId, setUpdatingDocId] = useState<string | null>(null);
 
   // Récupérer les documents d'identité du candidat
   const [userDocuments, setUserDocuments] = useState<UserDocuments>({});
   const [loadingUserDocs, setLoadingUserDocs] = useState(false);
+
+  // Documents étudiants depuis Firebase Storage
+  const [studentDocuments, setStudentDocuments] = useState<StudentDocument[]>(
+    []
+  );
+  // Documents des travailleurs et artistes depuis Firebase Storage
+  const [workerArtistDocuments, setWorkerArtistDocuments] = useState<
+    WorkerArtistDocument[]
+  >([]);
+  const [loadingStudentDocs, setLoadingStudentDocs] = useState(false);
+  const [loadingWorkerArtistDocs, setLoadingWorkerArtistDocs] = useState(false);
 
   useEffect(() => {
     const fetchApplication = async () => {
@@ -198,6 +262,17 @@ export default function ApplicationDetail() {
           if (docs?.length > 0) {
             setUserDocuments(docs[0]);
           }
+
+          // Récupérer également les documents étudiants depuis Firebase
+          if (userId) {
+            if (application.type === "student") {
+              await fetchStudentDocuments(userId);
+            } else if (application.type === "worker") {
+              await fetchWorkerDocuments(userId);
+            } else if (application.type === "artist") {
+              await fetchArtistDocuments(userId);
+            }
+          }
         }
       } catch (err) {
         console.error(
@@ -209,11 +284,81 @@ export default function ApplicationDetail() {
       }
     };
 
+    // Nouvelle fonction pour récupérer les documents étudiants
+    const fetchStudentDocuments = async (userId: string) => {
+      setLoadingStudentDocs(true);
+      try {
+        // Récupérer les documents étudiants
+        const docs = await firestoreService.queryDocuments<StudentDocument>(
+          "studentDocuments",
+          [where("studentId", "==", userId)]
+        );
+
+        if (docs?.length > 0) {
+          setStudentDocuments(docs);
+        }
+      } catch (err) {
+        console.error(
+          "Erreur lors de la récupération des documents étudiants:",
+          err
+        );
+      } finally {
+        setLoadingStudentDocs(false);
+      }
+    };
+
+    // Fonction pour récupérer les documents des travailleurs
+    const fetchWorkerDocuments = async (userId: string) => {
+      setLoadingWorkerArtistDocs(true);
+      try {
+        // Récupérer les documents des travailleurs
+        const docs =
+          await firestoreService.getAllDocuments<WorkerArtistDocument>(
+            `workers/${userId}/documents`
+          );
+
+        if (docs?.length > 0) {
+          setWorkerArtistDocuments(docs);
+        }
+      } catch (err) {
+        console.error(
+          "Erreur lors de la récupération des documents du travailleur:",
+          err
+        );
+      } finally {
+        setLoadingWorkerArtistDocs(false);
+      }
+    };
+
+    // Fonction pour récupérer les documents des artistes
+    const fetchArtistDocuments = async (userId: string) => {
+      setLoadingWorkerArtistDocs(true);
+      try {
+        // Récupérer le document de l'artiste
+        const artistDoc =
+          await firestoreService.getDocument<ArtistDocumentsDocument>(
+            "artists",
+            userId
+          );
+
+        if (artistDoc?.documents && artistDoc.documents.length > 0) {
+          setWorkerArtistDocuments(artistDoc.documents);
+        }
+      } catch (err) {
+        console.error(
+          "Erreur lors de la récupération des documents de l'artiste:",
+          err
+        );
+      } finally {
+        setLoadingWorkerArtistDocs(false);
+      }
+    };
+
     if (id) {
       fetchApplication();
       fetchUserDocuments();
     }
-  }, [id, application?.applicantEmail]);
+  }, [id, application?.applicantEmail, application?.type]);
 
   // Formatter les dates
   const formatDate = (timestamp: Timestamp | string | undefined): string => {
@@ -368,6 +513,451 @@ export default function ApplicationDetail() {
         </div>
       </a>
     );
+  };
+
+  // Fonction pour mettre à jour le statut d'un document étudiant
+  const updateStudentDocumentStatus = async (
+    document: StudentDocument,
+    newStatus: "approved" | "rejected" | "pending"
+  ) => {
+    if (!application?.id) return;
+
+    try {
+      setUpdatingDocId(document.id);
+
+      // Mettre à jour le statut dans Firestore
+      await firestoreService.updateDocument(
+        "studentDocuments",
+        `${document.studentId}_${document.id}`,
+        {
+          status: newStatus,
+          feedback:
+            newStatus === "rejected"
+              ? "Document refusé par l'administrateur"
+              : newStatus === "approved"
+              ? "Document approuvé par l'administrateur"
+              : "",
+        }
+      );
+
+      // Mettre à jour l'état local
+      setStudentDocuments((prev) =>
+        prev.map((doc) =>
+          doc.id === document.id ? { ...doc, status: newStatus } : doc
+        )
+      );
+
+      toast.success(
+        `Document ${
+          newStatus === "approved" ? "approuvé" : "refusé"
+        } avec succès`
+      );
+    } catch (error) {
+      console.error(
+        "Erreur lors de la mise à jour du statut du document:",
+        error
+      );
+      toast.error("Erreur lors de la mise à jour du statut du document");
+    } finally {
+      setUpdatingDocId(null);
+    }
+  };
+
+  // Fonction pour mettre à jour le statut d'un document travailleur
+  const updateWorkerDocumentStatus = async (
+    document: WorkerArtistDocument,
+    newStatus: "approved" | "rejected" | "pending"
+  ) => {
+    if (!application?.id || !document.id) return;
+
+    try {
+      setUpdatingDocId(document.id);
+
+      // Récupérer l'ID utilisateur à partir de l'email de l'application
+      const users = await firestoreService.queryDocuments("users", [
+        where("email", "==", application.applicantEmail),
+      ]);
+
+      if (!users?.length) {
+        toast.error("Utilisateur non trouvé");
+        return;
+      }
+
+      const userId = users[0].id;
+
+      // Mettre à jour le document dans la collection workers
+      await firestoreService.updateDocument(
+        `workers/${userId}/documents`,
+        document.id,
+        {
+          status: newStatus,
+          feedback:
+            newStatus === "rejected"
+              ? "Document refusé par l'administrateur"
+              : newStatus === "approved"
+              ? "Document approuvé par l'administrateur"
+              : "",
+        }
+      );
+
+      // Mettre à jour l'état local
+      setWorkerArtistDocuments((prev) =>
+        prev.map((doc) =>
+          doc.id === document.id ? { ...doc, status: newStatus } : doc
+        )
+      );
+
+      toast.success(
+        `Document ${
+          newStatus === "approved" ? "approuvé" : "refusé"
+        } avec succès`
+      );
+    } catch (error) {
+      console.error(
+        "Erreur lors de la mise à jour du statut du document:",
+        error
+      );
+      toast.error("Erreur lors de la mise à jour du statut du document");
+    } finally {
+      setUpdatingDocId(null);
+    }
+  };
+
+  // Fonction pour mettre à jour le statut d'un document artiste
+  const updateArtistDocumentStatus = async (
+    document: WorkerArtistDocument,
+    newStatus: "approved" | "rejected" | "pending"
+  ) => {
+    if (!application?.id || !document.id) return;
+
+    try {
+      setUpdatingDocId(document.id);
+
+      // Récupérer l'ID utilisateur à partir de l'email de l'application
+      const users = await firestoreService.queryDocuments("users", [
+        where("email", "==", application.applicantEmail),
+      ]);
+
+      if (!users?.length) {
+        toast.error("Utilisateur non trouvé");
+        return;
+      }
+
+      const userId = users[0].id;
+      if (!userId) {
+        toast.error("ID utilisateur non trouvé");
+        return;
+      }
+
+      // Récupérer le document artiste complet
+      const artistDoc =
+        await firestoreService.getDocument<ArtistDocumentsDocument>(
+          "artists",
+          userId
+        );
+
+      if (!artistDoc?.documents) {
+        toast.error("Documents de l'artiste non trouvés");
+        return;
+      }
+
+      // Mettre à jour le statut du document spécifique
+      const updatedDocuments = artistDoc.documents.map((doc) =>
+        doc.id === document.id
+          ? {
+              ...doc,
+              status: newStatus,
+              feedback:
+                newStatus === "rejected"
+                  ? "Document refusé par l'administrateur"
+                  : newStatus === "approved"
+                  ? "Document approuvé par l'administrateur"
+                  : "",
+            }
+          : doc
+      );
+
+      // Mettre à jour le document dans Firestore
+      await firestoreService.updateDocument("artists", userId, {
+        documents: updatedDocuments,
+      });
+
+      // Mettre à jour l'état local
+      setWorkerArtistDocuments((prev) =>
+        prev.map((doc) =>
+          doc.id === document.id ? { ...doc, status: newStatus } : doc
+        )
+      );
+
+      toast.success(
+        `Document ${
+          newStatus === "approved" ? "approuvé" : "refusé"
+        } avec succès`
+      );
+    } catch (error) {
+      console.error(
+        "Erreur lors de la mise à jour du statut du document:",
+        error
+      );
+      toast.error("Erreur lors de la mise à jour du statut du document");
+    } finally {
+      setUpdatingDocId(null);
+    }
+  };
+
+  // Handler générique pour la mise à jour du statut d'un document
+  const handleUpdateDocumentStatus = async (
+    document: StudentDocument | WorkerArtistDocument,
+    newStatus: "approved" | "rejected" | "pending"
+  ) => {
+    if (!application) return;
+
+    if (application.type === "student") {
+      await updateStudentDocumentStatus(document as StudentDocument, newStatus);
+    } else if (application.type === "worker") {
+      await updateWorkerDocumentStatus(
+        document as WorkerArtistDocument,
+        newStatus
+      );
+    } else if (application.type === "artist") {
+      await updateArtistDocumentStatus(
+        document as WorkerArtistDocument,
+        newStatus
+      );
+    }
+  };
+
+  // Mettre à jour le composant StudentDocumentItem pour inclure les boutons d'approbation/rejet
+  const StudentDocumentItem: React.FC<{
+    document: StudentDocument | WorkerArtistDocument;
+  }> = ({ document }) => {
+    if (!document.fileUrl) return null;
+
+    // Déterminer le type de document basé sur l'extension de fichier
+    let documentType = "default";
+    if (document.fileName) {
+      if (document.fileName.toLowerCase().endsWith(".pdf")) {
+        documentType = "pdf";
+      } else if (/\.(jpe?g|png|gif|webp|svg)$/i.test(document.fileName)) {
+        documentType = "image";
+      }
+    }
+
+    // Sélectionner l'icône appropriée
+    let documentIcon;
+    if (documentType === "pdf") {
+      documentIcon = (
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="h-6 w-6 text-red-600 dark:text-red-400 mr-3"
+          viewBox="0 0 20 20"
+          fill="currentColor"
+        >
+          <path
+            fillRule="evenodd"
+            d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"
+            clipRule="evenodd"
+          />
+          <path d="M8 11a1 1 0 100-2H7a1 1 0 000 2h1zm2 0a1 1 0 100-2 1 1 0 000 2zm2-1a1 1 0 011-1 1 1 0 110 2h-1a1 1 0 01-1-1z" />
+        </svg>
+      );
+    } else if (documentType === "image") {
+      documentIcon = (
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="h-6 w-6 text-blue-600 dark:text-blue-400 mr-3"
+          viewBox="0 0 20 20"
+          fill="currentColor"
+        >
+          <path
+            fillRule="evenodd"
+            d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z"
+            clipRule="evenodd"
+          />
+        </svg>
+      );
+    } else {
+      documentIcon = (
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="h-6 w-6 text-primary-600 dark:text-primary-400 mr-3"
+          viewBox="0 0 20 20"
+          fill="currentColor"
+        >
+          <path
+            fillRule="evenodd"
+            d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z"
+            clipRule="evenodd"
+          />
+        </svg>
+      );
+    }
+
+    return (
+      <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+        <a
+          href={document.fileUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center p-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+        >
+          {documentIcon}
+          <div className="flex-1">
+            <div className="flex items-center">
+              <span className="block text-gray-900 dark:text-white font-medium">
+                {document.name}
+              </span>
+              {getStatusBadgeForDocument(document.status)}
+            </div>
+            <span className="text-sm text-gray-500 dark:text-gray-400">
+              {document.uploadDate && `Téléversé le ${document.uploadDate}`}
+              {document.fileSize && ` • ${document.fileSize}`}
+            </span>
+          </div>
+        </a>
+
+        {document.status !== "approved" && document.status !== "rejected" && (
+          <div className="flex border-t border-gray-200 dark:border-gray-700 divide-x divide-gray-200 dark:divide-gray-700">
+            <button
+              onClick={() => handleUpdateDocumentStatus(document, "approved")}
+              disabled={updatingDocId === document.id}
+              className="flex-1 py-2 text-xs font-medium text-green-600 hover:bg-green-50 dark:text-green-400 dark:hover:bg-green-900/20 transition-colors"
+            >
+              {updatingDocId === document.id ? (
+                <span className="flex items-center justify-center">
+                  <svg
+                    className="animate-spin h-4 w-4 mr-1"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </svg>
+                  Approbation...
+                </span>
+              ) : (
+                "Approuver"
+              )}
+            </button>
+            <button
+              onClick={() => handleUpdateDocumentStatus(document, "rejected")}
+              disabled={updatingDocId === document.id}
+              className="flex-1 py-2 text-xs font-medium text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20 transition-colors"
+            >
+              {updatingDocId === document.id ? (
+                <span className="flex items-center justify-center">
+                  <svg
+                    className="animate-spin h-4 w-4 mr-1"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </svg>
+                  Refus...
+                </span>
+              ) : (
+                "Rejeter"
+              )}
+            </button>
+          </div>
+        )}
+
+        {(document.status === "approved" || document.status === "rejected") && (
+          <div className="border-t border-gray-200 dark:border-gray-700">
+            <button
+              onClick={() => handleUpdateDocumentStatus(document, "pending")}
+              disabled={updatingDocId === document.id}
+              className="w-full py-2 text-xs font-medium text-gray-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-800/50 transition-colors"
+            >
+              {updatingDocId === document.id ? (
+                <span className="flex items-center justify-center">
+                  <svg
+                    className="animate-spin h-4 w-4 mr-1"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </svg>
+                  Réinitialisation...
+                </span>
+              ) : (
+                "Remettre en attente"
+              )}
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // Fonction pour obtenir un badge de statut pour les documents
+  const getStatusBadgeForDocument = (status: StudentDocument["status"]) => {
+    switch (status) {
+      case "pending":
+        return (
+          <span className="ml-2 px-2 py-0.5 rounded-full text-xs bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+            En attente
+          </span>
+        );
+      case "approved":
+        return (
+          <span className="ml-2 px-2 py-0.5 rounded-full text-xs bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+            Approuvé
+          </span>
+        );
+      case "rejected":
+        return (
+          <span className="ml-2 px-2 py-0.5 rounded-full text-xs bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">
+            Rejeté
+          </span>
+        );
+      case "not_uploaded":
+        return (
+          <span className="ml-2 px-2 py-0.5 rounded-full text-xs bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400">
+            Non téléversé
+          </span>
+        );
+      default:
+        return null;
+    }
   };
 
   // Afficher l'indicateur de chargement
@@ -934,6 +1524,58 @@ export default function ApplicationDetail() {
                   )}
                 </div>
               )}
+            </>
+          )}
+        </div>
+
+        {/* Documents étudiants depuis Firebase Storage */}
+        <div className="glass-card p-6 mb-6">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+            Documents de candidature
+          </h2>
+
+          {loadingStudentDocs || loadingWorkerArtistDocs ? (
+            <div className="flex justify-center items-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary-600"></div>
+              <span className="ml-2 text-gray-600 dark:text-gray-400">
+                Chargement des documents...
+              </span>
+            </div>
+          ) : (
+            <>
+              {application?.type === "student" &&
+                studentDocuments.length === 0 && (
+                  <div className="text-center py-8 text-gray-600 dark:text-gray-400">
+                    Aucun document de candidature téléversé par cet étudiant.
+                  </div>
+                )}
+              {application?.type === "student" &&
+                studentDocuments.length > 0 && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {studentDocuments.map((doc) => (
+                      <StudentDocumentItem key={doc.id} document={doc} />
+                    ))}
+                  </div>
+                )}
+
+              {(application?.type === "worker" ||
+                application?.type === "artist") &&
+                workerArtistDocuments.length === 0 && (
+                  <div className="text-center py-8 text-gray-600 dark:text-gray-400">
+                    Aucun document de candidature téléversé par ce{" "}
+                    {application?.type === "worker" ? "travailleur" : "artiste"}
+                    .
+                  </div>
+                )}
+              {(application?.type === "worker" ||
+                application?.type === "artist") &&
+                workerArtistDocuments.length > 0 && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {workerArtistDocuments.map((doc) => (
+                      <StudentDocumentItem key={doc.id} document={doc} />
+                    ))}
+                  </div>
+                )}
             </>
           )}
         </div>

@@ -21,6 +21,7 @@ interface Document extends FirestoreDocument {
   feedback?: string;
   required: boolean;
   fileUrl?: string;
+  fileName?: string;
 }
 
 interface FirestoreDocumentData extends FirestoreDocument {
@@ -188,11 +189,51 @@ export default function ArtistDocuments() {
     }
 
     try {
+      // Vérifier le document sélectionné
+      const selectedDoc = documents.find((doc) => doc.id === uploadingDoc);
+      if (!selectedDoc) {
+        toast.error("Document non trouvé");
+        return;
+      }
+
+      // Vérifier le type de fichier
+      const allowedTypes = selectedDoc.type.split(",");
+      const fileExtension = file.name.split(".").pop()?.toLowerCase();
+      if (!fileExtension || !allowedTypes.includes(fileExtension)) {
+        toast.error(
+          `Type de fichier non supporté. Types acceptés: ${allowedTypes
+            .map((type) => `.${type}`)
+            .join(", ")}`
+        );
+        return;
+      }
+
+      // Vérifier la taille du fichier (max 10 MB)
+      const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB en octets
+      if (file.size > MAX_FILE_SIZE) {
+        toast.error("Le fichier est trop volumineux. Taille maximale: 10 MB");
+        return;
+      }
+
+      // Afficher le toast de chargement
+      toast.loading("Téléversement en cours...");
+
       // Générer un chemin unique pour le fichier
-      const filePath = storageService.generateFilePath(user.uid, file.name);
+      const filePath = storageService.generateFilePath(
+        user.uid,
+        file.name,
+        "artist_documents"
+      );
 
       // Téléverser le fichier vers Firebase Storage
       const downloadURL = await storageService.uploadFile(filePath, file);
+
+      // Calculer la taille du fichier
+      const fileSizeKB = Math.round(file.size / 1024);
+      const fileSizeFormatted =
+        fileSizeKB >= 1024
+          ? `${(fileSizeKB / 1024).toFixed(1)} MB`
+          : `${fileSizeKB} KB`;
 
       // Mettre à jour le document dans Firestore
       const updatedDocuments = documents.map((doc) =>
@@ -201,8 +242,9 @@ export default function ArtistDocuments() {
               ...doc,
               status: "pending" as const,
               uploadDate: new Date().toLocaleDateString(),
-              fileSize: `${(file.size / 1024 / 1024).toFixed(2)} MB`,
+              fileSize: fileSizeFormatted,
               fileUrl: downloadURL,
+              fileName: file.name,
             }
           : doc
       );
@@ -216,10 +258,40 @@ export default function ArtistDocuments() {
       );
 
       setDocuments(updatedDocuments);
+
+      // Mettre à jour le document sélectionné
+      if (selectedDocument?.id === uploadingDoc) {
+        setSelectedDocument(
+          updatedDocuments.find((doc) => doc.id === uploadingDoc) || null
+        );
+      }
+
+      toast.dismiss();
       toast.success("Document uploadé avec succès");
     } catch (error) {
       console.error("Error uploading document:", error);
-      toast.error("Erreur lors de l'upload du document");
+      toast.dismiss();
+
+      let errorMessage = "Erreur lors de l'upload du document";
+
+      // Vérifier si l'erreur vient de Firebase
+      if (error instanceof Error) {
+        if (error.message.includes("storage/unauthorized")) {
+          errorMessage = "Vous n'êtes pas autorisé à téléverser des fichiers";
+        } else if (error.message.includes("storage/quota-exceeded")) {
+          errorMessage = "Quota de stockage dépassé";
+        } else if (error.message.includes("storage/canceled")) {
+          errorMessage = "Téléversement annulé";
+        } else if (error.message.includes("storage/unknown")) {
+          errorMessage = "Une erreur inconnue s'est produite";
+        } else if (error.message.includes("storage/object-not-found")) {
+          errorMessage = "Le fichier n'a pas été trouvé";
+        } else if (error.message.includes("network-error")) {
+          errorMessage = "Problème de connexion réseau";
+        }
+      }
+
+      toast.error(errorMessage);
     } finally {
       setUploadingDoc(null);
       if (fileInputRef.current) {
@@ -461,7 +533,7 @@ export default function ArtistDocuments() {
                         />
                       </svg>
                       <p className="mt-2 text-xs sm:text-sm text-gray-600 dark:text-gray-400">
-                        Aperçu du document
+                        {selectedDocument.fileName || "Aperçu du document"}
                       </p>
                     </div>
                   )}
