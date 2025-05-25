@@ -1,6 +1,5 @@
 "use client";
 
-import ArtistProgressBar from "@/app/components/ArtistProgressBar";
 import { useAuth } from "@/app/contexts/AuthContext";
 import { useToast } from "@/app/hooks/useToast";
 import { FirestoreDocument, firestoreService } from "@/firebase";
@@ -455,9 +454,8 @@ export default function ArtistApplication() {
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
-          Candidature Artistique
+          Candidature
         </h1>
-        <ArtistProgressBar showPercentage size="medium" />
       </div>
 
       <div className="glass-card overflow-hidden">

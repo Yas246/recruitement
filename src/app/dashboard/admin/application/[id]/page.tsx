@@ -1481,52 +1481,6 @@ export default function ApplicationDetail() {
         )}
 
         {/* Documents d'identité et pièces justificatives */}
-        <div className="glass-card p-6 mb-6">
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
-            Documents d'identité et pièces justificatives
-          </h2>
-
-          {loadingUserDocs ? (
-            <div className="flex justify-center items-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary-600"></div>
-              <span className="ml-2 text-gray-600 dark:text-gray-400">
-                Chargement des documents...
-              </span>
-            </div>
-          ) : (
-            <>
-              {Object.keys(userDocuments).length === 0 ? (
-                <div className="text-center py-8 text-gray-600 dark:text-gray-400">
-                  Aucun document d'identité disponible pour ce candidat.
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {renderDocumentLink(
-                    userDocuments.id_card,
-                    "Carte d'identité",
-                    "image"
-                  )}
-                  {renderDocumentLink(
-                    userDocuments.passport,
-                    "Passeport",
-                    "image"
-                  )}
-                  {renderDocumentLink(
-                    userDocuments.residence_permit,
-                    "Titre de séjour",
-                    "image"
-                  )}
-                  {renderDocumentLink(userDocuments.cv, "CV", "pdf")}
-                  {renderDocumentLink(userDocuments.diploma, "Diplôme", "pdf")}
-
-                  {userDocuments.other_documents?.map((doc) =>
-                    renderDocumentLink(doc.url, doc.name, "document")
-                  )}
-                </div>
-              )}
-            </>
-          )}
-        </div>
 
         {/* Documents étudiants depuis Firebase Storage */}
         <div className="glass-card p-6 mb-6">

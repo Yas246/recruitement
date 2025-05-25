@@ -77,14 +77,13 @@ export default function DashboardLayout({
     ? "artist"
     : pathname.includes("/admin")
     ? "admin"
-    : "other";
+    : "student";
 
   const userTypeLabel = {
     student: "Étudiant",
     worker: "Travailleur",
     artist: "Artiste",
     admin: "Administrateur",
-    other: "Autre profil",
   }[userType];
 
   const toggleMobileMenu = () => {
@@ -172,42 +171,6 @@ export default function DashboardLayout({
             </SidebarLink>
 
             <SidebarLink
-              href="/dashboard/admin/messages"
-              icon={
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-4 w-4 sm:h-5 sm:w-5"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
-                  <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
-                </svg>
-              }
-              onClick={handleClose}
-              showUnreadCounter={true}
-            >
-              Messages
-            </SidebarLink>
-
-            <SidebarLink
-              href="/dashboard/admin/notifications"
-              icon={
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-4 w-4 sm:h-5 sm:w-5"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z" />
-                </svg>
-              }
-              onClick={handleClose}
-            >
-              Notifications
-            </SidebarLink>
-
-            <SidebarLink
               href="/dashboard/admin/statistics"
               icon={
                 <svg
@@ -246,27 +209,6 @@ export default function DashboardLayout({
             </SidebarLink>
 
             <SidebarLink
-              href="/dashboard/admin/settings"
-              icon={
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-4 w-4 sm:h-5 sm:w-5"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              }
-              onClick={handleClose}
-            >
-              Paramètres
-            </SidebarLink>
-
-            <SidebarLink
               href={`/dashboard/${userType}/videocall`}
               icon={
                 <svg
@@ -285,27 +227,6 @@ export default function DashboardLayout({
           </>
         ) : (
           <>
-            <SidebarLink
-              href={`/dashboard/${userType}/documents`}
-              icon={
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-4 w-4 sm:h-5 sm:w-5"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              }
-              onClick={handleClose}
-            >
-              Mes Documents
-            </SidebarLink>
-
             <SidebarLink
               href={`/dashboard/${userType}/application`}
               icon={
@@ -326,6 +247,26 @@ export default function DashboardLayout({
               onClick={handleClose}
             >
               Ma Candidature
+            </SidebarLink>
+            <SidebarLink
+              href={`/dashboard/${userType}/documents`}
+              icon={
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-4 w-4 sm:h-5 sm:w-5"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              }
+              onClick={handleClose}
+            >
+              Mes Documents
             </SidebarLink>
 
             <SidebarLink
@@ -349,7 +290,7 @@ export default function DashboardLayout({
               Calendrier
             </SidebarLink>
 
-            <SidebarLink
+            {/*  <SidebarLink
               href={`/dashboard/${userType}/messages`}
               icon={
                 <svg
@@ -366,7 +307,7 @@ export default function DashboardLayout({
               showUnreadCounter={true}
             >
               Messages
-            </SidebarLink>
+            </SidebarLink> */}
 
             <SidebarLink
               href={`/dashboard/${userType}/videocall`}
@@ -383,50 +324,6 @@ export default function DashboardLayout({
               onClick={handleClose}
             >
               Mon entretien vidéo
-            </SidebarLink>
-
-            {userType === "artist" && (
-              <SidebarLink
-                href="/dashboard/artist/portfolio"
-                icon={
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-4 w-4 sm:h-5 sm:w-5"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                }
-                onClick={handleClose}
-              >
-                Mon Portfolio
-              </SidebarLink>
-            )}
-
-            <SidebarLink
-              href={`/dashboard/${userType}/settings`}
-              icon={
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-4 w-4 sm:h-5 sm:w-5"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              }
-              onClick={handleClose}
-            >
-              Paramètres
             </SidebarLink>
           </>
         )}

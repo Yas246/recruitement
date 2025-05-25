@@ -134,7 +134,7 @@ export default function StudentVideoCall() {
       <div className="space-y-6">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-            Mon entretien d&apos;admission
+            Mon entretien
           </h1>
         </div>
 
@@ -159,8 +159,7 @@ export default function StudentVideoCall() {
             Aucun entretien programmé
           </h2>
           <p className="text-gray-600 dark:text-gray-400 mb-4">
-            Vous n&apos;avez actuellement aucun entretien d&apos;admission
-            programmé.
+            Vous n&apos;avez actuellement aucun entretien programmé.
           </p>
           <p className="text-gray-600 dark:text-gray-400">
             Veuillez contacter l&apos;administration si vous avez des questions.
@@ -187,7 +186,7 @@ export default function StudentVideoCall() {
                   {activeMeeting?.title || upcomingMeetings[0].title}
                 </h2>
                 <p className="text-gray-600 dark:text-gray-400">
-                  Entretien avec l&apos;administration de l&apos;université
+                  Entretien avec l&apos;administration
                 </p>
               </div>
               <div className="mt-2 sm:mt-0">

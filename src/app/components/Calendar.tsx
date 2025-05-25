@@ -70,9 +70,16 @@ export default function Calendar({
 
     for (let i = 0; i < firstDay; i++) {
       const day = prevMonthDays - firstDay + i + 1;
+      // Créer la date sans fuseau horaire
+      const year = prevMonth.getFullYear();
+      const month = prevMonth.getMonth() + 1;
+      const formattedDate = `${year}-${String(month).padStart(2, "0")}-${String(
+        day
+      ).padStart(2, "0")}`;
       const date = new Date(prevMonth.getFullYear(), prevMonth.getMonth(), day);
+
       days.push({
-        date: date.toISOString().split("T")[0],
+        date: formattedDate,
         formattedDate: day.toString(),
         dayName: ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"][
           date.getDay()
@@ -84,13 +91,20 @@ export default function Calendar({
 
     // Ajouter les jours du mois en cours
     for (let i = 1; i <= daysInMonth; i++) {
+      // Créer la date sans fuseau horaire
+      const year = currentMonth.getFullYear();
+      const month = currentMonth.getMonth() + 1;
+      const formattedDate = `${year}-${String(month).padStart(2, "0")}-${String(
+        i
+      ).padStart(2, "0")}`;
       const date = new Date(
         currentMonth.getFullYear(),
         currentMonth.getMonth(),
         i
       );
+
       days.push({
-        date: date.toISOString().split("T")[0],
+        date: formattedDate,
         formattedDate: i.toString(),
         dayName: ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"][
           date.getDay()
@@ -106,9 +120,16 @@ export default function Calendar({
     nextMonth.setMonth(nextMonth.getMonth() + 1);
 
     for (let i = 1; i <= remainingDays; i++) {
+      // Créer la date sans fuseau horaire
+      const year = nextMonth.getFullYear();
+      const month = nextMonth.getMonth() + 1;
+      const formattedDate = `${year}-${String(month).padStart(2, "0")}-${String(
+        i
+      ).padStart(2, "0")}`;
       const date = new Date(nextMonth.getFullYear(), nextMonth.getMonth(), i);
+
       days.push({
-        date: date.toISOString().split("T")[0],
+        date: formattedDate,
         formattedDate: i.toString(),
         dayName: ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"][
           date.getDay()
@@ -124,9 +145,28 @@ export default function Calendar({
   // Mettre à jour les jours et les événements quand le mois change
   useEffect(() => {
     const days = generateDaysInMonth();
+
+    // Debug: Afficher les dates pour vérification
+    console.log(
+      "Dates du calendrier:",
+      days.map((day) => day.date)
+    );
+    console.log(
+      "Dates des événements:",
+      events.map((event) => event.date)
+    );
+
     const daysWithEvents = days.map((day) => ({
       ...day,
-      events: events.filter((event) => event.date === day.date),
+      events: events.filter((event) => {
+        // Debug: Afficher la comparaison des dates
+        console.log("Comparaison:", {
+          dayDate: day.date,
+          eventDate: event.date,
+          match: event.date === day.date,
+        });
+        return event.date === day.date;
+      }),
     }));
     setEventDays(daysWithEvents);
   }, [currentMonth, events, generateDaysInMonth]);
@@ -282,10 +322,10 @@ export default function Calendar({
         {(!isMobile || mobileView === "calendar") && (
           <div className="glass-card flex-1">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+              <h2 className="text-xl ml-2 mt-2 font-semibold text-gray-900 dark:text-white">
                 {currentMonthLabel}
               </h2>
-              <div className="flex space-x-2">
+              <div className="flex space-x-2 mr-2 mt-2">
                 <button
                   onClick={handlePreviousMonth}
                   className="p-2 rounded-md bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600"

@@ -1,11 +1,7 @@
 "use client";
 
-import ProgressBar from "@/app/components/ProgressBar";
 import { useAuth } from "@/app/contexts/AuthContext";
-import { useIsMobile } from "@/app/utils/responsive";
 import { FirestoreDocument, firestoreService } from "@/firebase";
-import { limit, orderBy, QueryConstraint, where } from "firebase/firestore";
-import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 // Interfaces pour les types de données
@@ -15,16 +11,6 @@ interface ProgressStep {
   completed?: boolean;
   active?: boolean;
   pending?: boolean;
-}
-
-interface Message extends FirestoreDocument {
-  id: string;
-  sender: string;
-  preview: string;
-  date: string;
-  unread: boolean;
-  recipientId?: string;
-  createdAt?: Date;
 }
 
 interface NextStep {
@@ -51,10 +37,8 @@ interface StudentData extends FirestoreDocument {
 export default function StudentDashboard() {
   const { userData, user } = useAuth();
   const [studentData, setStudentData] = useState<StudentData | null>(null);
-  const [messages, setMessages] = useState<Message[]>([]);
   const [resources, setResources] = useState<Resource[]>([]);
   const [loading, setLoading] = useState(true);
-  const isMobile = useIsMobile();
 
   // Données statiques dans useMemo
   const staticData = useMemo(
@@ -129,51 +113,6 @@ export default function StudentDashboard() {
           setStudentData(newStudentData);
         }
 
-        // Récupérer les messages récents
-        const messageConstraints: QueryConstraint[] = [
-          where("recipientId", "==", userData.id),
-          orderBy("createdAt", "desc"),
-          limit(3),
-        ];
-
-        const messagesResult = await firestoreService.queryDocuments<Message>(
-          "messages",
-          messageConstraints
-        );
-
-        if (messagesResult?.length > 0) {
-          setMessages(messagesResult);
-        } else {
-          // Messages par défaut si aucun n'existe
-          const defaultMessages = [
-            {
-              id: "1",
-              sender: "Conseiller OMSHINA",
-              preview: "Veuillez compléter votre dossier de candidature...",
-              date: "Aujourd'hui, 14:30",
-              unread: true,
-              recipientId: userData.id,
-              createdAt: new Date(),
-            },
-            {
-              id: "2",
-              sender: "Support technique",
-              preview: "Votre demande a bien été prise en compte...",
-              date: "Hier, 09:15",
-              unread: false,
-              recipientId: userData.id,
-              createdAt: new Date(Date.now() - 86400000), // hier
-            },
-          ];
-
-          // Créer des messages par défaut dans Firestore
-          for (const message of defaultMessages) {
-            await firestoreService.addDocument("messages", message);
-          }
-
-          setMessages(defaultMessages);
-        }
-
         // Récupérer les ressources disponibles
         const resourcesResult =
           await firestoreService.getAllDocuments<Resource>("resources");
@@ -197,10 +136,6 @@ export default function StudentDashboard() {
     loadStudentData();
   }, [user?.uid, userData?.id, staticData]);
 
-  // Utiliser les étapes de progression stockées ou par défaut
-  const progressSteps =
-    studentData?.progressSteps || staticData.defaultProgressSteps;
-  const applicationStatus = studentData?.applicationStatus || "pending";
   const nextSteps = studentData?.nextSteps || [
     {
       id: 1,
@@ -222,73 +157,6 @@ export default function StudentDashboard() {
     },
   ];
 
-  // Message d'état basé sur le statut de la candidature
-  const getStatusMessage = () => {
-    switch (applicationStatus) {
-      case "pending":
-        return "Votre progression est en bonne voie. Pour continuer, veuillez compléter votre dossier de candidature.";
-      case "submitted":
-        return "Votre dossier a été soumis. Nous l'examinerons dans les plus brefs délais.";
-      case "interview":
-        return "Félicitations ! Votre candidature a été présélectionnée. Préparez-vous pour l'entretien.";
-      case "accepted":
-        return "Félicitations ! Votre candidature a été acceptée. Veuillez compléter les démarches administratives.";
-      case "rejected":
-        return "Nous sommes désolés, votre candidature n'a pas été retenue. N'hésitez pas à nous contacter pour plus d'informations.";
-      default:
-        return "Votre progression est en bonne voie. Pour continuer, veuillez compléter votre dossier de candidature.";
-    }
-  };
-
-  // Fonction pour formater la date des messages
-  const formatMessageDate = (date: Date | string) => {
-    if (!date) return "";
-
-    // Assurer que messageDate est un objet Date valide
-    let messageDate: Date;
-    try {
-      // Si c'est une chaîne de caractères, tenter de la convertir en Date
-      messageDate = typeof date === "string" ? new Date(date) : date;
-
-      // Vérifier si l'objet Date est valide
-      if (isNaN(messageDate.getTime())) {
-        console.error("Date invalide:", date);
-        return typeof date === "string" ? date : "Date inconnue";
-      }
-    } catch (error) {
-      console.error("Erreur lors de la conversion de la date:", error);
-      return typeof date === "string" ? date : "Date inconnue";
-    }
-
-    const now = new Date();
-    const yesterday = new Date(now);
-    yesterday.setDate(yesterday.getDate() - 1);
-
-    // Si c'est aujourd'hui
-    if (messageDate.toDateString() === now.toDateString()) {
-      return `Aujourd'hui, ${messageDate.getHours()}:${messageDate
-        .getMinutes()
-        .toString()
-        .padStart(2, "0")}`;
-    }
-
-    // Si c'est hier
-    if (messageDate.toDateString() === yesterday.toDateString()) {
-      return `Hier, ${messageDate.getHours()}:${messageDate
-        .getMinutes()
-        .toString()
-        .padStart(2, "0")}`;
-    }
-
-    // Sinon, afficher la date complète
-    return messageDate.toLocaleDateString("fr-FR", {
-      day: "2-digit",
-      month: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
-
   if (loading) {
     return (
       <div className="w-full px-4 sm:px-6 flex justify-center items-center h-[calc(100vh-200px)]">
@@ -307,96 +175,102 @@ export default function StudentDashboard() {
         {/* Progression */}
         <div className="glass-card p-4 sm:p-6">
           <h2 className="text-base sm:text-lg md:text-xl font-bold text-gray-900 dark:text-white mb-2 sm:mb-3">
-            Progression de votre dossier
+            Conseils contextuels
           </h2>
 
-          <ProgressBar
-            steps={progressSteps}
-            showPercentage={true}
-            size={isMobile ? "small" : "medium"}
-            className="mb-1"
-          />
+          <div className="bg-blue-50 dark:bg-blue-900/30 rounded-lg p-4 mb-4">
+            <div className="flex items-start">
+              <div className="flex-shrink-0">
+                <svg
+                  className="h-6 w-6 text-blue-600 dark:text-blue-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <p className="text-sm text-blue-700 dark:text-blue-300">
+                  Conseil
+                </p>
+                <p className="mt-1 text-sm text-blue-600 dark:text-blue-200">
+                  Vérifiez vos documents avant de les soumettre pour accélérer
+                  la validation.
+                </p>
+              </div>
+            </div>
+          </div>
 
-          <div className="mt-3 sm:mt-6">
-            <p className="text-xs sm:text-sm md:text-base text-gray-700 dark:text-gray-300 mb-3 sm:mb-4">
-              {getStatusMessage()}
-            </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="bg-green-50 dark:bg-green-900/30 rounded-lg p-4">
+              <div className="flex items-start">
+                <div className="flex-shrink-0">
+                  <svg
+                    className="h-6 w-6 text-green-600 dark:text-green-400"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm text-green-700 dark:text-green-300">
+                    Pour un dossier complet
+                  </p>
+                  <p className="mt-1 text-sm text-green-600 dark:text-green-200">
+                    Assurez-vous que tous vos documents sont à jour et lisibles
+                    avant de les télécharger.
+                  </p>
+                </div>
+              </div>
+            </div>
 
-            <Link
-              href="/dashboard/student/application"
-              className="bg-primary-600 hover:bg-primary-700 text-white font-medium py-1.5 sm:py-2 px-3 sm:px-4 text-xs sm:text-sm rounded-full inline-flex items-center transition-colors"
-            >
-              Compléter ma candidature
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-3.5 w-3.5 sm:h-4 sm:w-4 ml-1.5 sm:ml-2"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z"
-                  clipRule="evenodd"
-                />
-              </svg>
-            </Link>
+            <div className="bg-purple-50 dark:bg-purple-900/30 rounded-lg p-4">
+              <div className="flex items-start">
+                <div className="flex-shrink-0">
+                  <svg
+                    className="h-6 w-6 text-purple-600 dark:text-purple-400"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm text-purple-700 dark:text-purple-300">
+                    Gagnez du temps
+                  </p>
+                  <p className="mt-1 text-sm text-purple-600 dark:text-purple-200">
+                    Consultez régulièrement vos notifications pour rester
+                    informé de l'avancement de votre dossier.
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
-          {/* Messages récents */}
-          <div className="glass-card p-4 sm:p-6">
-            <div className="flex items-center justify-between mb-2 sm:mb-3">
-              <h2 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white">
-                Messages récents
-              </h2>
-
-              <Link
-                href="/dashboard/student/messages"
-                className="text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 text-xs sm:text-sm font-medium"
-              >
-                Voir tous
-              </Link>
-            </div>
-
-            <div className="space-y-2 sm:space-y-3">
-              {messages.length > 0 ? (
-                messages.map((message) => (
-                  <div
-                    key={message.id}
-                    className="border-b border-gray-200 dark:border-gray-700 pb-2 sm:pb-3 last:border-0 last:pb-0"
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="min-w-0 flex-1">
-                        <p className="font-medium text-xs sm:text-sm text-gray-900 dark:text-white truncate">
-                          {message.sender}
-                          {message.unread && (
-                            <span className="ml-1.5 inline-block w-1.5 h-1.5 sm:w-2 sm:h-2 bg-primary-600 dark:bg-primary-400 rounded-full"></span>
-                          )}
-                        </p>
-                        <p className="text-xs text-gray-700 dark:text-gray-300 mt-0.5 sm:mt-1 truncate">
-                          {message.preview}
-                        </p>
-                      </div>
-                      <span className="text-xs text-gray-500 dark:text-gray-400 ml-2 whitespace-nowrap">
-                        {message.date ||
-                          (message.createdAt
-                            ? formatMessageDate(message.createdAt)
-                            : "")}
-                      </span>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
-                  Aucun message récent.
-                </p>
-              )}
-            </div>
-          </div>
-
+        <div className="flex flex-col gap-4 sm:gap-6">
           {/* Prochaines étapes */}
-          <div className="glass-card p-4 sm:p-6 lg:col-span-2">
+          <div className="glass-card p-4 sm:p-6">
             <h2 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white mb-2 sm:mb-3">
               Prochaines étapes
             </h2>
@@ -413,7 +287,7 @@ export default function StudentDashboard() {
                     <h3 className="font-medium text-xs sm:text-sm text-gray-900 dark:text-white">
                       {step.title}
                     </h3>
-                    <p className="text-xs text-gray-700 dark:text-gray-300 mt-0.5 sm:mt-1">
+                    <p className="text-sm text-gray-700 dark:text-gray-300 mt-0.5 sm:mt-1">
                       {step.description}
                     </p>
                   </div>

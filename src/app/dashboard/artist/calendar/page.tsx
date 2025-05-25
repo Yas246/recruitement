@@ -73,5 +73,5 @@ export default function ArtistCalendarPage() {
     );
   }
 
-  return <Calendar events={events} title="Calendrier Artistique" />;
+  return <Calendar events={events} title="Calendrier" />;
 }

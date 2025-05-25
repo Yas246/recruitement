@@ -3,7 +3,7 @@
 import AdminRoute from "@/app/components/AdminRoute";
 import VideoCall from "@/app/components/VideoCall";
 import { useAuth } from "@/app/contexts/AuthContext";
-import { firestoreService, FirestoreDocument } from "@/firebase";
+import { FirestoreDocument, firestoreService } from "@/firebase";
 import { Timestamp } from "firebase/firestore";
 import { DateTime } from "luxon";
 import { FormEvent, useEffect, useState } from "react";
@@ -293,10 +293,18 @@ export default function AdminVideoCall() {
     }
   };
 
-  const filteredMeetings = meetings.filter((meeting) => {
-    if (statusFilter === "all") return true;
-    return meeting.status === statusFilter;
-  });
+  const filteredMeetings = meetings
+    .filter((meeting) => {
+      if (statusFilter === "all") return true;
+      return meeting.status === statusFilter;
+    })
+    .sort((a, b) => {
+      // Créer des dates complètes en combinant date et heure
+      const dateA = new Date(`${a.date}T${a.time}`);
+      const dateB = new Date(`${b.date}T${b.time}`);
+      // Trier du plus récent au plus ancien
+      return dateB.getTime() - dateA.getTime();
+    });
 
   const handleJoinMeeting = (meeting: VideoMeeting) => {
     setActiveMeeting(meeting);

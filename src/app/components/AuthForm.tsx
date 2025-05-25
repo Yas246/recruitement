@@ -170,7 +170,6 @@ export default function AuthForm({
                 <option value="student">Étudiant</option>
                 <option value="worker">Travailleur</option>
                 <option value="artist">Artiste</option>
-                <option value="other">Autre</option>
               </select>
             </div>
           </>

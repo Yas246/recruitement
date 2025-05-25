@@ -1,6 +1,5 @@
 "use client";
 
-import ProgressBar from "@/app/components/ProgressBar";
 import { useAuth } from "@/app/contexts/AuthContext";
 import { useToast } from "@/app/hooks/useToast";
 import {
@@ -390,15 +389,6 @@ export default function ArtistDocuments() {
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
           Documents requis
         </h1>
-        <ProgressBar
-          steps={[
-            { id: 1, name: "Informations personnelles", completed: true },
-            { id: 2, name: "Documents requis", completed: false, active: true },
-            { id: 3, name: "Portfolio", completed: false },
-            { id: 4, name: "Audition/Présentation", pending: true },
-            { id: 5, name: "Décision finale", pending: true },
-          ]}
-        />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">

@@ -1,6 +1,5 @@
 "use client";
 
-import WorkerProgressBar from "@/app/components/WorkerProgressBar";
 import { useAuth } from "@/app/contexts/AuthContext";
 import { useToast } from "@/app/hooks/useToast";
 import {
@@ -336,16 +335,6 @@ export default function WorkerDocuments() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div className="glass-card p-6 mb-8">
-        <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
-          Progression de votre dossier
-        </h2>
-        <WorkerProgressBar showPercentage size="medium" />
-        <p className="mt-4 text-sm text-gray-600 dark:text-gray-400">
-          Complétez votre dossier en téléchargeant les documents requis.
-        </p>
-      </div>
-
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
         {/* Liste des documents */}
         <div className="lg:col-span-2">

@@ -135,7 +135,7 @@ export default function WorkerVideoCall() {
       <div className="space-y-6">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-            Mes entretiens professionnels
+            Mon entretien
           </h1>
         </div>
 
@@ -160,8 +160,7 @@ export default function WorkerVideoCall() {
             Aucun entretien programmé
           </h2>
           <p className="text-gray-600 dark:text-gray-400 mb-4">
-            Vous n&apos;avez actuellement aucun entretien professionnel
-            programmé.
+            Vous n&apos;avez actuellement aucun entretien programmé.
           </p>
           <p className="text-gray-600 dark:text-gray-400">
             Contactez l&apos;administration pour plus d&apos;informations.
@@ -175,7 +174,7 @@ export default function WorkerVideoCall() {
     <div className="space-y-6">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-          Mes entretiens professionnels
+          Mes entretiens
         </h1>
       </div>
 
@@ -188,7 +187,7 @@ export default function WorkerVideoCall() {
                   {activeMeeting?.title || upcomingMeetings[0].title}
                 </h2>
                 <p className="text-gray-600 dark:text-gray-400">
-                  Entretien avec la direction des ressources humaines
+                  Entretien avec l&apos;administration
                 </p>
               </div>
               <div className="mt-2 sm:mt-0">
@@ -269,7 +268,7 @@ export default function WorkerVideoCall() {
                   Durée prévue
                 </h3>
                 <p className="text-xs text-gray-600 dark:text-gray-400">
-                  45 minutes
+                  30 minutes environ
                 </p>
               </div>
             </div>

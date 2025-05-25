@@ -137,7 +137,7 @@ export default function ArtistVideoCall() {
       <div className="space-y-6">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-            Mes entretiens artistiques
+            Entretien
           </h1>
         </div>
 
@@ -162,7 +162,7 @@ export default function ArtistVideoCall() {
             Aucun entretien programmé
           </h2>
           <p className="text-gray-600 dark:text-gray-400 mb-4">
-            Vous n&apos;avez actuellement aucun entretien artistique programmé.
+            Vous n&apos;avez actuellement aucun entretien programmé.
           </p>
           <p className="text-gray-600 dark:text-gray-400">
             Contactez l&apos;administration pour plus d&apos;informations.
@@ -176,7 +176,7 @@ export default function ArtistVideoCall() {
     <div className="space-y-6">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-          Mes entretiens artistiques
+          Mes entretiens
         </h1>
       </div>
 
@@ -189,7 +189,7 @@ export default function ArtistVideoCall() {
                   {activeMeeting?.title || upcomingMeetings[0].title}
                 </h2>
                 <p className="text-gray-600 dark:text-gray-400">
-                  Entretien avec la direction artistique
+                  Entretien avec l'administration
                 </p>
               </div>
               <div className="mt-2 sm:mt-0">
@@ -266,7 +266,7 @@ export default function ArtistVideoCall() {
                   Durée prévue
                 </h3>
                 <p className="text-xs text-gray-600 dark:text-gray-400">
-                  60 minutes
+                  30 minutes environ
                 </p>
               </div>
             </div>

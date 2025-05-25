@@ -4,7 +4,6 @@ import WorkerProgressBar from "@/app/components/WorkerProgressBar";
 import { useAuth } from "@/app/contexts/AuthContext";
 import { useToast } from "@/app/hooks/useToast";
 import { FirestoreDocument, firestoreService } from "@/firebase";
-import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 // Types pour les données
@@ -25,23 +24,6 @@ interface WorkerData extends FirestoreDocument {
   skills: string[];
   cvStatus: "up_to_date" | "outdated" | "not_uploaded";
   applicationProgress: ApplicationProgress;
-}
-
-interface Message extends FirestoreDocument {
-  id: string;
-  sender: string;
-  preview: string;
-  date: string;
-  unread: boolean;
-}
-
-interface JobOpportunity extends FirestoreDocument {
-  id: string;
-  title: string;
-  company: string;
-  location: string;
-  salary: string;
-  match: number;
 }
 
 type WorkerProfile = WorkerData & FirestoreDocument;
@@ -72,14 +54,53 @@ export default function WorkerDashboard() {
     []
   );
 
-  const [recentMessages, setRecentMessages] = useState<Message[]>([]);
-  const [jobOpportunities, setJobOpportunities] = useState<JobOpportunity[]>(
-    []
-  );
-  const [skills, setSkills] = useState<string[]>([]);
-  const [cvStatus, setCvStatus] = useState<
-    "up_to_date" | "outdated" | "not_uploaded"
-  >("not_uploaded");
+  const nextSteps = [
+    {
+      id: 1,
+      title: "Finaliser votre dossier professionnel",
+      description:
+        "Complétez votre profil en ajoutant vos compétences, expériences et en téléchargeant votre CV à jour.",
+    },
+    {
+      id: 2,
+      title: "Préparation à l'entretien",
+      description:
+        "Une fois votre dossier validé, préparez-vous pour l'entretien en consultant nos conseils et ressources pour les professionnels.",
+    },
+    {
+      id: 3,
+      title: "Démarches d'intégration",
+      description:
+        "Après acceptation, nous vous accompagnerons dans les démarches d'intégration (contrat, documents administratifs, etc.).",
+    },
+  ];
+
+  const defaultResources = [
+    {
+      id: "1",
+      title: "Guide du professionnel expatrié",
+      url: "/resources/worker-guide",
+      category: "guide",
+    },
+    {
+      id: "2",
+      title: "Préparation aux entretiens professionnels",
+      url: "/resources/pro-interview-prep",
+      category: "preparation",
+    },
+    {
+      id: "3",
+      title: "Informations sur les contrats et visas de travail",
+      url: "/resources/work-visa-info",
+      category: "administratif",
+    },
+    {
+      id: "4",
+      title: "Liste des entreprises partenaires",
+      url: "/resources/company-partners",
+      category: "partenaires",
+    },
+  ];
 
   // Charger les données du profil worker
   useEffect(() => {
@@ -112,9 +133,6 @@ export default function WorkerDashboard() {
               user.uid,
               { applicationProgress: initialProgress }
             );
-          } else {
-            setSkills(workerProfile.skills || []);
-            setCvStatus(workerProfile.cvStatus || "not_uploaded");
           }
         } else {
           const initialData: WorkerData = {
@@ -145,284 +163,166 @@ export default function WorkerDashboard() {
         }));
         toast.error("Impossible de charger votre profil");
       }
-
-      try {
-        // Charger les messages récents
-        const messagesCollection = `workers/${user.uid}/messages`;
-        const messages = await firestoreService.getAllDocuments<Message>(
-          messagesCollection
-        );
-        setRecentMessages(messages || []);
-      } catch (error) {
-        console.error("Erreur lors du chargement des messages:", error);
-        setErrors((prev) => ({
-          ...prev,
-          messages: "Impossible de charger vos messages",
-        }));
-        toast.error("Impossible de charger vos messages");
-      }
-
-      try {
-        // Charger les opportunités d'emploi
-        const jobsCollection = "job_opportunities";
-        const jobs = await firestoreService.getAllDocuments<JobOpportunity>(
-          jobsCollection
-        );
-        setJobOpportunities(jobs || []);
-      } catch (error) {
-        console.error("Erreur lors du chargement des opportunités:", error);
-        setErrors((prev) => ({
-          ...prev,
-          jobs: "Impossible de charger les opportunités",
-        }));
-        toast.error("Impossible de charger les opportunités d'emploi");
-      } finally {
-        setIsLoading(false);
-      }
     };
 
     loadWorkerData();
   }, [user?.uid, toast, defaultProgressSteps]);
 
-  const renderLoadingOrError = (section: "profile" | "messages" | "jobs") => {
-    if (isLoading) {
-      return (
-        <div className="flex justify-center items-center p-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary-600"></div>
-        </div>
-      );
-    }
-    if (errors[section]) {
-      return (
-        <div className="text-center p-8">
-          <p className="text-red-500 dark:text-red-400">{errors[section]}</p>
-          <button
-            onClick={() => window.location.reload()}
-            className="mt-4 text-primary-600 hover:text-primary-700 dark:text-primary-400"
-          >
-            Réessayer
-          </button>
-        </div>
-      );
-    }
-    return null;
-  };
-
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-600"></div>
-      </div>
-    );
-  }
-
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div className="glass-card p-6 mb-8">
-        <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
-          Progression de votre dossier
+        <h2 className="text-base sm:text-lg md:text-xl font-bold text-gray-900 dark:text-white mb-2 sm:mb-3">
+          Conseils contextuels
         </h2>
-        <WorkerProgressBar showPercentage size="medium" />
-        <p className="mt-4 text-sm text-gray-600 dark:text-gray-400">
-          Suivez l'avancement de votre candidature et complétez les étapes
-          requises.
-        </p>
+
+        <div className="bg-blue-50 dark:bg-blue-900/30 rounded-lg p-4 mb-4">
+          <div className="flex items-start">
+            <div className="flex-shrink-0">
+              <svg
+                className="h-6 w-6 text-blue-600 dark:text-blue-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <p className="text-sm text-blue-700 dark:text-blue-300">
+                Conseil
+              </p>
+              <p className="mt-1 text-sm text-blue-600 dark:text-blue-200">
+                Vérifiez vos documents avant de les soumettre pour accélérer la
+                validation.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="bg-green-50 dark:bg-green-900/30 rounded-lg p-4">
+            <div className="flex items-start">
+              <div className="flex-shrink-0">
+                <svg
+                  className="h-6 w-6 text-green-600 dark:text-green-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <p className="text-sm text-green-700 dark:text-green-300">
+                  Pour un dossier complet
+                </p>
+                <p className="mt-1 text-sm text-green-600 dark:text-green-200">
+                  Assurez-vous que tous vos documents sont à jour et lisibles
+                  avant de les télécharger.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-purple-50 dark:bg-purple-900/30 rounded-lg p-4">
+            <div className="flex items-start">
+              <div className="flex-shrink-0">
+                <svg
+                  className="h-6 w-6 text-purple-600 dark:text-purple-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <p className="text-sm text-purple-700 dark:text-purple-300">
+                  Gagnez du temps
+                </p>
+                <p className="mt-1 text-sm text-purple-600 dark:text-purple-200">
+                  Consultez régulièrement vos notifications pour rester informé
+                  de l'avancement de votre dossier.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
-        {/* Messages récents */}
+      <div className="flex flex-col gap-4 sm:gap-6">
+        {/* Prochaines étapes */}
         <div className="glass-card p-4 sm:p-6">
-          <div className="flex items-center justify-between mb-2 sm:mb-4">
-            <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">
-              Messages récents
-            </h2>
-
-            <Link
-              href="/dashboard/worker/messages"
-              className="text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 text-xs sm:text-sm font-medium"
-            >
-              Voir tous
-            </Link>
-          </div>
-
-          {renderLoadingOrError("messages") || (
-            <div className="space-y-3 sm:space-y-4">
-              {recentMessages.length === 0 ? (
-                <p className="text-gray-500 dark:text-gray-400 text-sm text-center py-4">
-                  Aucun message récent
-                </p>
-              ) : (
-                recentMessages.map((message) => (
-                  <div
-                    key={message.id}
-                    className="border-b border-gray-200 dark:border-gray-700 pb-3 sm:pb-4 last:border-0 last:pb-0"
-                  >
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <p className="font-medium text-sm sm:text-base text-gray-900 dark:text-white">
-                          {message.sender}
-                          {message.unread && (
-                            <span className="ml-2 inline-block w-2 h-2 bg-primary-600 dark:bg-primary-400 rounded-full"></span>
-                          )}
-                        </p>
-                        <p className="text-xs sm:text-sm text-gray-700 dark:text-gray-300 mt-1">
-                          {message.preview}
-                        </p>
-                      </div>
-                      <span className="text-xs text-gray-500 dark:text-gray-400 shrink-0 ml-2">
-                        {message.date}
-                      </span>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Opportunités d'emploi */}
-        <div className="glass-card p-4 sm:p-6 lg:col-span-2">
-          <div className="flex items-center justify-between mb-2 sm:mb-4">
-            <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">
-              Opportunités d&apos;emploi recommandées
-            </h2>
-            <Link
-              href="/dashboard/worker/jobs"
-              className="text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 text-xs sm:text-sm font-medium"
-            >
-              Voir toutes
-            </Link>
-          </div>
-
-          {renderLoadingOrError("jobs") || (
-            <div className="space-y-3 sm:space-y-4">
-              {jobOpportunities.length === 0 ? (
-                <p className="text-gray-500 dark:text-gray-400 text-sm text-center py-4">
-                  Aucune opportunité d'emploi disponible pour le moment
-                </p>
-              ) : (
-                jobOpportunities.map((job) => (
-                  <div
-                    key={job.id}
-                    className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 sm:p-4 hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors"
-                  >
-                    <div className="flex flex-col sm:flex-row justify-between items-start">
-                      <div>
-                        <h3 className="font-medium text-gray-900 dark:text-white text-base sm:text-lg">
-                          {job.title}
-                        </h3>
-                        <p className="text-gray-600 dark:text-gray-400 text-xs sm:text-sm mt-1">
-                          {job.company} • {job.location}
-                        </p>
-                        <p className="text-gray-600 dark:text-gray-400 text-xs sm:text-sm mt-1 sm:mt-2">
-                          Salaire: {job.salary}
-                        </p>
-                      </div>
-                      <div className="bg-primary-100 text-primary-800 dark:bg-primary-900/30 dark:text-primary-400 text-xs sm:text-sm font-medium px-2 py-0.5 rounded-full mt-2 sm:mt-0">
-                        {job.match}% match
-                      </div>
-                    </div>
-                    <div className="mt-3 sm:mt-4 flex flex-wrap gap-2 sm:gap-3">
-                      <button className="text-gray-700 bg-gray-100 hover:bg-gray-200 dark:text-gray-300 dark:bg-gray-800 dark:hover:bg-gray-700 px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm rounded-lg transition-colors">
-                        Voir détails
-                      </button>
-                      <button className="text-white bg-primary-600 hover:bg-primary-700 dark:bg-primary-600 dark:hover:bg-primary-700 px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm rounded-lg transition-colors">
-                        Postuler
-                      </button>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Compétences et CV */}
-        <div className="glass-card p-4 sm:p-6">
-          <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white mb-2 sm:mb-4">
-            Mon profil professionnel
+          <h2 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white mb-2 sm:mb-3">
+            Prochaines étapes
           </h2>
 
-          {renderLoadingOrError("profile") || (
-            <div>
-              <h3 className="font-medium text-sm sm:text-base text-gray-900 dark:text-white mb-2">
-                Compétences principales
-              </h3>
-              <div className="flex flex-wrap gap-1 sm:gap-2 mb-4 sm:mb-6">
-                {skills.length === 0 ? (
-                  <p className="text-gray-500 dark:text-gray-400 text-sm">
-                    Aucune compétence ajoutée
-                  </p>
-                ) : (
-                  skills.map((skill, index) => (
-                    <span
-                      key={index}
-                      className="px-2 sm:px-3 py-0.5 sm:py-1 bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-full text-xs sm:text-sm"
-                    >
-                      {skill}
-                    </span>
-                  ))
-                )}
-              </div>
-
-              <div className="mb-4 sm:mb-6">
-                <h3 className="font-medium text-sm sm:text-base text-gray-900 dark:text-white mb-2">
-                  Statut de votre CV
-                </h3>
-                <div className="flex items-center">
-                  <div
-                    className={`h-6 w-6 sm:h-8 sm:w-8 rounded-full flex items-center justify-center ${
-                      cvStatus === "up_to_date"
-                        ? "bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400"
-                        : cvStatus === "outdated"
-                        ? "bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400"
-                        : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"
-                    }`}
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-4 w-4 sm:h-5 sm:w-5"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
+          <ul className="space-y-3 sm:space-y-4">
+            {nextSteps.map((step) => (
+              <li key={step.id} className="flex items-start">
+                <div className="flex-shrink-0 mt-0.5">
+                  <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-primary-100 flex items-center justify-center text-primary-600 dark:bg-primary-900/30 dark:text-primary-400">
+                    <span className="text-xs">{step.id}</span>
                   </div>
-                  <span className="ml-2 text-xs sm:text-sm text-gray-700 dark:text-gray-300">
-                    {cvStatus === "up_to_date"
-                      ? "CV à jour"
-                      : cvStatus === "outdated"
-                      ? "CV à mettre à jour"
-                      : "CV non téléchargé"}
-                  </span>
                 </div>
-              </div>
+                <div className="ml-2 sm:ml-3">
+                  <h3 className="font-medium text-xs sm:text-sm text-gray-900 dark:text-white">
+                    {step.title}
+                  </h3>
+                  <p className="text-sm text-gray-700 dark:text-gray-300 mt-0.5 sm:mt-1">
+                    {step.description}
+                  </p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
 
-              <Link
-                href="/dashboard/worker/profile"
-                className="text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 font-medium text-xs sm:text-sm flex items-center"
+      <div className="glass-card p-6 mt-8">
+        <h2 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white mb-2 sm:mb-3">
+          Ressources utiles
+        </h2>
+
+        <ul className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
+          {defaultResources.map((resource) => (
+            <li key={resource.id}>
+              <a
+                href={resource.url}
+                className="flex items-center text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 text-xs sm:text-sm"
               >
-                Modifier mon profil
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
-                  className="h-3 w-3 sm:h-4 sm:w-4 ml-1"
+                  className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2"
                   viewBox="0 0 20 20"
                   fill="currentColor"
                 >
                   <path
                     fillRule="evenodd"
-                    d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z"
+                    d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"
                     clipRule="evenodd"
                   />
                 </svg>
-              </Link>
-            </div>
-          )}
-        </div>
+                {resource.title}
+              </a>
+            </li>
+          ))}
+        </ul>
       </div>
     </div>
   );

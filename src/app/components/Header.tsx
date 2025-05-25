@@ -67,11 +67,7 @@ export default function Header() {
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-4 lg:space-x-8">
             {/* Navigation Links */}
-            <div className="flex items-center space-x-3 lg:space-x-6">
-              <Link href="/contact" className="nav-link text-sm lg:text-base">
-                Contact
-              </Link>
-            </div>
+            <div className="flex items-center space-x-3 lg:space-x-6"></div>
 
             {/* Auth Buttons and Theme Toggle */}
             <div className="flex items-center space-x-2 lg:space-x-4">
@@ -194,13 +190,7 @@ export default function Header() {
                     >
                       À propos
                     </Link>
-                    <Link
-                      href="/contact"
-                      className="block px-3 py-2 rounded-md text-sm sm:text-base font-medium text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-800"
-                      onClick={() => setIsMenuOpen(false)}
-                    >
-                      Contact
-                    </Link>
+
                     {user && (
                       <Link
                         href={dashboardLink}

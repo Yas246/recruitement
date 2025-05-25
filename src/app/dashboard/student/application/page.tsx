@@ -1,6 +1,5 @@
 "use client";
 
-import ProgressBar from "@/app/components/ProgressBar";
 import { useAuth } from "@/app/contexts/AuthContext";
 import { useToast } from "@/app/hooks/useToast";
 import { FirestoreDocument, firestoreService } from "@/firebase";
@@ -478,29 +477,6 @@ export default function StudentApplication() {
       <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-8">
         Ma Candidature
       </h1>
-
-      <div className="glass-card p-6 mb-8">
-        <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
-          Progression de votre dossier
-        </h2>
-        <ProgressBar
-          steps={applicationData?.progressSteps || defaultProgressSteps()}
-          showPercentage={true}
-          size="medium"
-          className="mb-2"
-        />
-
-        {applicationData?.status === "submitted" ? (
-          <p className="mt-4 text-green-600 dark:text-green-400 font-medium">
-            Votre candidature a été soumise et est en cours d'examen.
-          </p>
-        ) : (
-          <p className="mt-4 text-gray-700 dark:text-gray-300">
-            Votre progression est en bonne voie. Pour continuer, veuillez
-            compléter les informations de votre candidature ci-dessous.
-          </p>
-        )}
-      </div>
 
       <div className="glass-card overflow-hidden">
         {/* Onglets */}

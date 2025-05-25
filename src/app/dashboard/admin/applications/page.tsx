@@ -474,24 +474,6 @@ export default function AdminApplications() {
             Gestion des candidatures
           </h1>
           <div className="flex gap-2">
-            <Link
-              href="/dashboard/admin/applications/export"
-              className="btn-secondary flex items-center gap-2"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              Exporter
-            </Link>
             <Link href="/dashboard/admin" className="btn-primary">
               Tableau de bord
             </Link>
@@ -514,7 +496,7 @@ export default function AdminApplications() {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
-                placeholder="Nom, email, ID, pays..."
+                placeholder="Nom, email, ID..."
               />
             </div>
 
@@ -579,7 +561,6 @@ export default function AdminApplications() {
                   <option value="applicantName">Nom</option>
                   <option value="type">Type</option>
                   <option value="status">Statut</option>
-                  <option value="country">Pays</option>
                 </select>
                 <button
                   onClick={() =>
@@ -673,9 +654,7 @@ export default function AdminApplications() {
                   <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Type
                   </th>
-                  <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Pays
-                  </th>
+
                   <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Soumission
                   </th>
@@ -708,9 +687,7 @@ export default function AdminApplications() {
                       <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm">
                         {getTypeBadge(app.type)}
                       </td>
-                      <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
-                        {app.country}
-                      </td>
+
                       <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
                         {app.formattedDate}
                       </td>

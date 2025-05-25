@@ -1,11 +1,9 @@
 "use client";
 
-import ArtistProgressBar from "@/app/components/ArtistProgressBar";
 import { useAuth } from "@/app/contexts/AuthContext";
 import { useToast } from "@/app/hooks/useToast";
 import { FirestoreDocument, firestoreService } from "@/firebase";
 import { Timestamp } from "firebase/firestore";
-import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 // Types pour les données
@@ -46,23 +44,6 @@ interface ArtistData extends FirestoreDocument {
     | undefined;
 }
 
-interface Message {
-  id: string;
-  sender: string;
-  preview: string;
-  date: string;
-  unread: boolean;
-}
-
-interface Exhibition {
-  id: string;
-  title: string;
-  date: string;
-  location: string;
-  status: "upcoming" | "ongoing" | "past";
-  description: string;
-}
-
 type ArtistProfile = ArtistData & FirestoreDocument;
 
 export default function ArtistDashboard() {
@@ -96,12 +77,58 @@ export default function ArtistDashboard() {
   ); // Empty dependency array since this never changes
 
   const [, setProgressSteps] = useState<ProgressStep[]>(defaultProgressSteps);
-  const [recentMessages] = useState<Message[]>([]);
-  const [upcomingExhibitions] = useState<Exhibition[]>([]);
   const [skills, setSkills] = useState<string[]>([]);
   const [portfolioStatus, setPortfolioStatus] = useState<
     "up_to_date" | "outdated" | "not_uploaded"
   >("not_uploaded");
+
+  const nextSteps = [
+    {
+      id: 1,
+      title: "Finaliser votre dossier de candidature",
+      description:
+        "Complétez votre dossier en renseignant toutes les informations requises et en téléchargeant les documents demandés.",
+    },
+    {
+      id: 2,
+      title: "Préparation à l'entretien",
+      description:
+        "Une fois votre portfolio validé, préparez-vous pour l'entretien en consultant nos conseils spécifiques aux artistes.",
+    },
+    {
+      id: 3,
+      title: "Démarches d'intégration artistique",
+      description:
+        "Après acceptation, nous vous accompagnerons dans votre intégration (résidence, espace de création, expositions).",
+    },
+  ];
+
+  const defaultResources = [
+    {
+      id: "1",
+      title: "Guide de l'artiste résident",
+      url: "/resources/artist-guide",
+      category: "guide",
+    },
+    {
+      id: "2",
+      title: "Préparation aux entretiens artistiques",
+      url: "/resources/art-interview-prep",
+      category: "preparation",
+    },
+    {
+      id: "3",
+      title: "Informations sur les résidences",
+      url: "/resources/residency-info",
+      category: "administratif",
+    },
+    {
+      id: "4",
+      title: "Liste des galeries partenaires",
+      url: "/resources/gallery-partners",
+      category: "partenaires",
+    },
+  ];
 
   // Références pour suivre l'état du chargement
   const isDataFetchingRef = useRef(false);
@@ -191,32 +218,6 @@ export default function ArtistDashboard() {
     loadArtistData();
   }, [user?.uid, defaultProgressSteps, toast]); // Dépendance uniquement sur user.uid
 
-  const renderLoadingOrError = (
-    section: "profile" | "messages" | "exhibitions"
-  ) => {
-    if (loadingStates[section]) {
-      return (
-        <div className="flex justify-center items-center p-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary-600"></div>
-        </div>
-      );
-    }
-    if (errors[section]) {
-      return (
-        <div className="text-center p-8">
-          <p className="text-red-500 dark:text-red-400">{errors[section]}</p>
-          <button
-            onClick={() => window.location.reload()}
-            className="mt-4 text-primary-600 hover:text-primary-700 dark:text-primary-400"
-          >
-            Réessayer
-          </button>
-        </div>
-      );
-    }
-    return null;
-  };
-
   if (isLoading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
@@ -228,202 +229,159 @@ export default function ArtistDashboard() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div className="glass-card p-6 mb-8">
-        <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
-          Progression de votre dossier
+        <h2 className="text-base sm:text-lg md:text-xl font-bold text-gray-900 dark:text-white mb-2 sm:mb-3">
+          Conseils contextuels
         </h2>
-        <ArtistProgressBar showPercentage size="medium" />
-        <p className="mt-4 text-sm text-gray-600 dark:text-gray-400">
-          Suivez l'avancement de votre candidature et complétez les étapes
-          requises.
-        </p>
-      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
-        {/* Messages récents */}
-        <div className="glass-card p-4 sm:p-6">
-          <div className="flex items-center justify-between mb-2 sm:mb-4">
-            <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">
-              Messages récents
-            </h2>
-            <Link
-              href="/dashboard/artist/messages"
-              className="text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 text-xs sm:text-sm font-medium"
-            >
-              Voir tous
-            </Link>
-          </div>
-
-          {renderLoadingOrError("messages") || (
-            <div className="space-y-3 sm:space-y-4">
-              {recentMessages.length === 0 ? (
-                <p className="text-gray-500 dark:text-gray-400 text-sm text-center py-4">
-                  Aucun message récent
-                </p>
-              ) : (
-                recentMessages.map((message) => (
-                  <div
-                    key={message.id}
-                    className="border-b border-gray-200 dark:border-gray-700 pb-3 sm:pb-4 last:border-0 last:pb-0"
-                  >
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <p className="font-medium text-sm sm:text-base text-gray-900 dark:text-white">
-                          {message.sender}
-                          {message.unread && (
-                            <span className="ml-2 inline-block w-2 h-2 bg-primary-600 dark:bg-primary-400 rounded-full"></span>
-                          )}
-                        </p>
-                        <p className="text-xs sm:text-sm text-gray-700 dark:text-gray-300 mt-1">
-                          {message.preview}
-                        </p>
-                      </div>
-                      <span className="text-xs text-gray-500 dark:text-gray-400 shrink-0 ml-2">
-                        {message.date}
-                      </span>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Expositions à venir */}
-        <div className="glass-card p-4 sm:p-6">
-          <div className="flex items-center justify-between mb-2 sm:mb-4">
-            <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">
-              Expositions à venir
-            </h2>
-            <Link
-              href="/dashboard/artist/exhibitions"
-              className="text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 text-xs sm:text-sm font-medium"
-            >
-              Voir toutes
-            </Link>
-          </div>
-
-          {renderLoadingOrError("exhibitions") || (
-            <div className="space-y-3 sm:space-y-4">
-              {upcomingExhibitions.length === 0 ? (
-                <p className="text-gray-500 dark:text-gray-400 text-sm text-center py-4">
-                  Aucune exposition à venir
-                </p>
-              ) : (
-                upcomingExhibitions.map((exhibition) => (
-                  <div
-                    key={exhibition.id}
-                    className="border-b border-gray-200 dark:border-gray-700 pb-3 sm:pb-4 last:border-0 last:pb-0"
-                  >
-                    <h3 className="font-medium text-sm sm:text-base text-gray-900 dark:text-white">
-                      {exhibition.title}
-                    </h3>
-                    <div className="mt-1 flex items-center text-xs sm:text-sm text-gray-600 dark:text-gray-400">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-4 w-4 mr-1"
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                      {exhibition.date}
-                    </div>
-                    <div className="mt-1 flex items-center text-xs sm:text-sm text-gray-600 dark:text-gray-400">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-4 w-4 mr-1"
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                      {exhibition.location}
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Compétences et Portfolio */}
-        <div className="glass-card p-4 sm:p-6">
-          <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white mb-2 sm:mb-4">
-            Mon profil artistique
-          </h2>
-
-          {renderLoadingOrError("profile") || (
-            <div>
-              <h3 className="font-medium text-sm sm:text-base text-gray-900 dark:text-white mb-2">
-                Compétences artistiques
-              </h3>
-              <div className="flex flex-wrap gap-1 sm:gap-2 mb-4 sm:mb-6">
-                {skills.length === 0 ? (
-                  <p className="text-gray-500 dark:text-gray-400 text-sm">
-                    Aucune compétence ajoutée
-                  </p>
-                ) : (
-                  skills.map((skill, index) => (
-                    <span
-                      key={index}
-                      className="px-2 sm:px-3 py-0.5 sm:py-1 bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-full text-xs sm:text-sm"
-                    >
-                      {skill}
-                    </span>
-                  ))
-                )}
-              </div>
-
-              <h3 className="font-medium text-sm sm:text-base text-gray-900 dark:text-white mb-2">
-                État du portfolio
-              </h3>
-              <div className="flex items-center mb-4">
-                <div
-                  className={`h-2.5 w-2.5 rounded-full mr-2 ${
-                    portfolioStatus === "up_to_date"
-                      ? "bg-green-500"
-                      : portfolioStatus === "outdated"
-                      ? "bg-yellow-500"
-                      : "bg-red-500"
-                  }`}
-                ></div>
-                <span className="text-sm text-gray-700 dark:text-gray-300">
-                  {portfolioStatus === "up_to_date"
-                    ? "À jour"
-                    : portfolioStatus === "outdated"
-                    ? "À mettre à jour"
-                    : "Non téléversé"}
-                </span>
-              </div>
-
-              <Link
-                href="/dashboard/artist/profile"
-                className="text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 font-medium text-xs sm:text-sm flex items-center"
+        <div className="bg-blue-50 dark:bg-blue-900/30 rounded-lg p-4 mb-4">
+          <div className="flex items-start">
+            <div className="flex-shrink-0">
+              <svg
+                className="h-6 w-6 text-blue-600 dark:text-blue-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
               >
-                Modifier mon profil
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <p className="text-sm text-blue-700 dark:text-blue-300">
+                Conseil
+              </p>
+              <p className="mt-1 text-sm text-blue-600 dark:text-blue-200">
+                Vérifiez vos documents avant de les soumettre pour accélérer la
+                validation.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="bg-green-50 dark:bg-green-900/30 rounded-lg p-4">
+            <div className="flex items-start">
+              <div className="flex-shrink-0">
                 <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-3 w-3 sm:h-4 sm:w-4 ml-1"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
+                  className="h-6 w-6 text-green-600 dark:text-green-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
                 >
                   <path
-                    fillRule="evenodd"
-                    d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z"
-                    clipRule="evenodd"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
                   />
                 </svg>
-              </Link>
+              </div>
+              <div className="ml-3">
+                <p className="text-sm text-green-700 dark:text-green-300">
+                  Pour un dossier complet
+                </p>
+                <p className="mt-1 text-sm text-green-600 dark:text-green-200">
+                  Assurez-vous que tous vos documents sont à jour et lisibles
+                  avant de les télécharger.
+                </p>
+              </div>
             </div>
-          )}
+          </div>
+
+          <div className="bg-purple-50 dark:bg-purple-900/30 rounded-lg p-4">
+            <div className="flex items-start">
+              <div className="flex-shrink-0">
+                <svg
+                  className="h-6 w-6 text-purple-600 dark:text-purple-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <p className="text-sm text-purple-700 dark:text-purple-300">
+                  Gagnez du temps
+                </p>
+                <p className="mt-1 text-sm text-purple-600 dark:text-purple-200">
+                  Consultez régulièrement vos notifications pour rester informé
+                  de l'avancement de votre dossier.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6"></div>
+
+      <div className="flex flex-col gap-4 sm:gap-6">
+        {/* Prochaines étapes */}
+        <div className="glass-card p-4 sm:p-6">
+          <h2 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white mb-2 sm:mb-3">
+            Prochaines étapes
+          </h2>
+
+          <ul className="space-y-3 sm:space-y-4">
+            {nextSteps.map((step) => (
+              <li key={step.id} className="flex items-start">
+                <div className="flex-shrink-0 mt-0.5">
+                  <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-primary-100 flex items-center justify-center text-primary-600 dark:bg-primary-900/30 dark:text-primary-400">
+                    <span className="text-xs">{step.id}</span>
+                  </div>
+                </div>
+                <div className="ml-2 sm:ml-3">
+                  <h3 className="font-medium text-xs sm:text-sm text-gray-900 dark:text-white">
+                    {step.title}
+                  </h3>
+                  <p className="text-sm text-gray-700 dark:text-gray-300 mt-0.5 sm:mt-1">
+                    {step.description}
+                  </p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div className="glass-card p-6">
+          <h2 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white mb-2 sm:mb-3">
+            Ressources utiles
+          </h2>
+
+          <ul className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
+            {defaultResources.map((resource) => (
+              <li key={resource.id}>
+                <a
+                  href={resource.url}
+                  className="flex items-center text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 text-xs sm:text-sm"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  {resource.title}
+                </a>
+              </li>
+            ))}
+          </ul>
         </div>
       </div>
     </div>
