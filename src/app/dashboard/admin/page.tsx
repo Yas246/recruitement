@@ -52,6 +52,10 @@ interface UserDocument extends FirestoreDocument {
   id: string;
   status: "active" | "pending";
   role: "student" | "worker" | "artist";
+  firstName: string;
+  lastName: string;
+  email: string;
+  createdAt: Timestamp;
 }
 
 interface StudentApplication extends FirestoreDocument {
@@ -84,6 +88,17 @@ interface ArtistApplication extends FirestoreDocument {
   updatedAt: Timestamp;
 }
 
+interface RecentUser extends FirestoreDocument {
+  id: string;
+  role: "student" | "worker" | "artist";
+  firstName: string;
+  lastName: string;
+  email: string;
+  createdAt: Timestamp;
+  status: "active" | "pending";
+  formattedDate?: string;
+}
+
 export default function AdminDashboard() {
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
@@ -105,6 +120,7 @@ export default function AdminDashboard() {
     },
   });
   const [upcomingEvents, setUpcomingEvents] = useState<Event[]>([]);
+  const [recentUsers, setRecentUsers] = useState<RecentUser[]>([]);
   const [recentApplications, setRecentApplications] = useState<Application[]>(
     []
   );
@@ -155,158 +171,137 @@ export default function AdminDashboard() {
 
       setIsLoading(true);
       try {
-        // 1. Récupérer les statistiques des utilisateurs
-        const studentsSnapshot =
+        // 1. Récupérer les statistiques des utilisateurs en une seule requête
+        const usersSnapshot =
+          await firestoreService.queryDocuments<UserDocument>("users", []);
+
+        // Calculer les statistiques en mémoire
+        const stats = {
+          students: { total: 0, active: 0, pending: 0 },
+          workers: { total: 0, active: 0, pending: 0 },
+          artists: { total: 0, active: 0, pending: 0 },
+        };
+
+        if (Array.isArray(usersSnapshot)) {
+          usersSnapshot.forEach((user) => {
+            if (user && user.role) {
+              const roleKey =
+                user.role === "student"
+                  ? "students"
+                  : user.role === "worker"
+                  ? "workers"
+                  : "artists";
+              stats[roleKey].total++;
+              if (user.status === "active") {
+                stats[roleKey].active++;
+              }
+            }
+          });
+        }
+
+        setStats(stats);
+
+        // 2. Récupérer les derniers utilisateurs inscrits
+        const recentUsersSnapshot =
           await firestoreService.queryDocuments<UserDocument>("users", [
-            where("role", "==", "student"),
+            orderBy("createdAt", "desc"),
+            limit(3),
           ]);
 
-        const workersSnapshot =
-          await firestoreService.queryDocuments<UserDocument>("users", [
-            where("role", "==", "worker"),
-          ]);
+        if (Array.isArray(recentUsersSnapshot)) {
+          const formattedUsers = recentUsersSnapshot.map((user) => ({
+            ...user,
+            formattedDate: formatTimestamp(user.createdAt),
+          }));
+          setRecentUsers(formattedUsers);
+        }
 
-        const artistsSnapshot =
-          await firestoreService.queryDocuments<UserDocument>("users", [
-            where("role", "==", "artist"),
-          ]);
-
-        // 2. Récupérer les candidatures
+        // 3. Récupérer les candidatures en une seule requête par type
         const [studentApps, workerApps, artistApps] = await Promise.all([
           firestoreService.queryDocuments<StudentApplication>(
             "studentApplications",
-            [where("status", "==", "submitted")]
+            [
+              where("status", "==", "submitted"),
+              orderBy("submittedAt", "desc"),
+              limit(3),
+            ]
           ),
           firestoreService.queryDocuments<WorkerApplication>(
             "workerApplications",
-            [where("status", "==", "submitted")]
+            [
+              where("status", "==", "submitted"),
+              orderBy("submittedAt", "desc"),
+              limit(3),
+            ]
           ),
           firestoreService.queryDocuments<ArtistApplication>(
             "artistApplications",
-            [where("status", "==", "submitted")]
+            [
+              where("status", "==", "submitted"),
+              orderBy("submittedAt", "desc"),
+              limit(3),
+            ]
           ),
         ]);
 
-        // Calculer les statistiques
-        const studentsStats = {
-          total: studentsSnapshot.length,
-          active: studentsSnapshot.filter((doc) => doc.status === "active")
-            .length,
-          pending: studentApps.length,
-        };
+        // Mettre à jour les statistiques avec les candidatures en attente
+        stats.students.pending = Array.isArray(studentApps)
+          ? studentApps.length
+          : 0;
+        stats.workers.pending = Array.isArray(workerApps)
+          ? workerApps.length
+          : 0;
+        stats.artists.pending = Array.isArray(artistApps)
+          ? artistApps.length
+          : 0;
 
-        const workersStats = {
-          total: workersSnapshot.length,
-          active: workersSnapshot.filter((doc) => doc.status === "active")
-            .length,
-          pending: workerApps.length,
-        };
+        // 4. Formater les candidatures récentes
+        const safeStudentApps = Array.isArray(studentApps) ? studentApps : [];
+        const safeWorkerApps = Array.isArray(workerApps) ? workerApps : [];
+        const safeArtistApps = Array.isArray(artistApps) ? artistApps : [];
 
-        const artistsStats = {
-          total: artistsSnapshot.length,
-          active: artistsSnapshot.filter((doc) => doc.status === "active")
-            .length,
-          pending: artistApps.length,
-        };
-
-        setStats({
-          students: studentsStats,
-          workers: workersStats,
-          artists: artistsStats,
-        });
-
-        // 3. Récupérer les événements à venir
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-
-        // Récupérer les événements globaux
-        const globalEvents = await firestoreService.queryDocuments<Event>(
-          "events",
-          [
-            where("date", ">=", today.toISOString().split("T")[0]),
-            orderBy("date", "asc"),
-            limit(3),
-          ]
-        );
-
-        // Récupérer les événements spécifiques aux utilisateurs
-        const userEvents: Event[] = [];
-        const userTypes = ["student", "worker", "artist"];
-
-        for (const userType of userTypes) {
-          const users = await firestoreService.queryDocuments<UserDocument>(
-            "users",
-            [where("role", "==", userType)]
-          );
-
-          for (const user of users) {
-            const userEventsCollection = `${userType}s/${user.id}/events`;
-            const events = await firestoreService.queryDocuments<Event>(
-              userEventsCollection,
-              [
-                where("date", ">=", today.toISOString().split("T")[0]),
-                orderBy("date", "asc"),
-              ]
-            );
-            if (events) {
-              userEvents.push(...events);
-            }
-          }
-        }
-
-        // Combiner et trier tous les événements
-        const allEvents = [...(globalEvents || []), ...userEvents];
-        const sortedEvents = allEvents
-          .sort((a, b) => {
-            const dateA = new Date(`${a.date}T${a.time}`);
-            const dateB = new Date(`${b.date}T${b.time}`);
-            return dateA.getTime() - dateB.getTime();
-          })
-          .slice(0, 3);
-
-        const formattedEvents = sortedEvents.map((event) => ({
-          ...event,
-          formattedDate: `${formatEventDate(event.date)} à ${event.time}`,
-        }));
-
-        setUpcomingEvents(formattedEvents);
-
-        // Récupérer les candidatures récentes
         const allApplications = [
-          ...studentApps.map((app) => ({
+          ...safeStudentApps.map((app) => ({
             id: app.id,
             userType: "student" as const,
-            userName: `${app.personalInfo.firstName} ${app.personalInfo.lastName}`,
+            userName:
+              `${app.personalInfo?.firstName || ""} ${
+                app.personalInfo?.lastName || ""
+              }`.trim() || "Utilisateur inconnu",
             submittedAt: app.submittedAt || app.updatedAt,
             status: "pending" as const,
           })),
-          ...workerApps.map((app) => ({
+          ...safeWorkerApps.map((app) => ({
             id: app.id,
             userType: "worker" as const,
-            userName: `${app.personalInfo.firstName} ${app.personalInfo.lastName}`,
+            userName:
+              `${app.personalInfo?.firstName || ""} ${
+                app.personalInfo?.lastName || ""
+              }`.trim() || "Utilisateur inconnu",
             submittedAt: app.submittedAt || app.updatedAt,
             status: "pending" as const,
           })),
-          ...artistApps.map((app) => ({
+          ...safeArtistApps.map((app) => ({
             id: app.id,
             userType: "artist" as const,
-            userName: `${app.personalInfo.firstName} ${app.personalInfo.lastName}`,
+            userName:
+              `${app.personalInfo?.firstName || ""} ${
+                app.personalInfo?.lastName || ""
+              }`.trim() || "Utilisateur inconnu",
             submittedAt: app.submittedAt || app.updatedAt,
             status: "pending" as const,
           })),
         ];
 
-        // Trier et prendre les 3 plus récentes
         const sortedApplications = allApplications
           .sort((a, b) => b.submittedAt.seconds - a.submittedAt.seconds)
-          .slice(0, 3);
+          .slice(0, 3)
+          .map((application) => ({
+            ...application,
+            formattedDate: formatTimestamp(application.submittedAt),
+          }));
 
-        const formattedApplications = sortedApplications.map((application) => ({
-          ...application,
-          formattedDate: formatTimestamp(application.submittedAt),
-        }));
-
-        setRecentApplications(formattedApplications);
+        setRecentApplications(sortedApplications);
       } catch (error) {
         console.error(
           "Erreur lors de la récupération des données admin:",
@@ -377,101 +372,76 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* Événements à venir et nouvelles candidatures */}
+        {/* Derniers inscrits et nouvelles candidatures */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
           <div className="glass-card p-4 sm:p-6">
             <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white mb-3 sm:mb-4">
-              Événements à venir
+              Derniers inscrits
             </h2>
             <div className="space-y-3 sm:space-y-4">
-              {upcomingEvents.length > 0 ? (
-                upcomingEvents.map((event) => (
+              {recentUsers.length > 0 ? (
+                recentUsers.map((user) => (
                   <div
-                    key={event.eventId}
+                    key={user.id}
                     className="flex items-start p-2 sm:p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
                   >
                     <div
                       className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center mr-3 ${
-                        event.userType === "student"
+                        user.role === "student"
                           ? "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400"
-                          : event.userType === "worker"
+                          : user.role === "worker"
                           ? "bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400"
-                          : event.userType === "artist"
-                          ? "bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400"
-                          : "bg-gray-100 text-gray-600 dark:bg-gray-800/30 dark:text-gray-400"
+                          : "bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400"
                       }`}
                     >
-                      {event.userType === "student" ? (
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="h-4 w-4 sm:h-5 sm:w-5"
-                          viewBox="0 0 20 20"
-                          fill="currentColor"
-                        >
-                          <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z" />
-                        </svg>
-                      ) : event.userType === "worker" ? (
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="h-4 w-4 sm:h-5 sm:w-5"
-                          viewBox="0 0 20 20"
-                          fill="currentColor"
-                        >
-                          <path
-                            fillRule="evenodd"
-                            d="M6 6V5a3 3 0 013-3h2a3 3 0 013 3v1h2a2 2 0 012 2v3.57A22.952 22.952 0 0110 13a22.95 22.95 0 01-8-1.43V8a2 2 0 012-2h2zm2-1a1 1 0 011-1h2a1 1 0 011 1v1H8V5zm1 5a1 1 0 011-1h.01a1 1 0 110 2H10a1 1 0 01-1-1z"
-                            clipRule="evenodd"
-                          />
-                          <path d="M2 13.692V16a2 2 0 002 2h12a2 2 0 002-2v-2.308A24.974 24.974 0 0110 15c-2.796 0-5.487-.46-8-1.308z" />
-                        </svg>
-                      ) : event.userType === "artist" ? (
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="h-4 w-4 sm:h-5 sm:w-5"
-                          viewBox="0 0 20 20"
-                          fill="currentColor"
-                        >
-                          <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-                        </svg>
-                      ) : (
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="h-4 w-4 sm:h-5 sm:w-5"
-                          viewBox="0 0 20 20"
-                          fill="currentColor"
-                        >
-                          <path
-                            fillRule="evenodd"
-                            d="M10 18a8 8 0 100-16 8 8 0 000 16z"
-                            clipRule="evenodd"
-                          />
-                        </svg>
-                      )}
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-4 w-4 sm:h-5 sm:w-5"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-sm sm:text-base text-gray-900 dark:text-white truncate">
-                        {event.title}
+                        {user.firstName} {user.lastName}
                       </p>
                       <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 truncate">
-                        {event.description}
+                        {user.email}
                       </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
-                        {event.formattedDate}
-                      </p>
+                      <div className="flex items-center mt-1">
+                        <span
+                          className={`px-2 py-1 text-xs rounded-full ${
+                            user.status === "active"
+                              ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                              : "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400"
+                          }`}
+                        >
+                          {user.status === "active" ? "Actif" : "En attente"}
+                        </span>
+                        <span className="text-xs text-gray-500 dark:text-gray-500 ml-2">
+                          {user.formattedDate}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 ))
               ) : (
                 <p className="text-center text-gray-500 dark:text-gray-400 py-4">
-                  Aucun événement à venir à afficher
+                  Aucun utilisateur récent à afficher
                 </p>
               )}
             </div>
             <Link
-              href="/dashboard/admin/calendar"
+              href="/dashboard/admin/users"
               className="block text-center text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 mt-4 text-xs sm:text-sm"
             >
-              Voir tous les événements →
+              Voir tous les utilisateurs →
             </Link>
           </div>
 
